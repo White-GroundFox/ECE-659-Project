@@ -1,0 +1,2439 @@
+version 3
+run N100-0-20260319-01:28:14-14431
+attr configname N100
+attr datetime 20260319-01:28:14
+attr datetimef 20260319-012814
+attr experiment N100
+attr inifile omnetpp.ini
+attr iterationvars ""
+attr iterationvarsd ""
+attr iterationvarsf ""
+attr measurement ""
+attr network OGDCNetwork
+attr processid 14431
+attr repetition 0
+attr replication #0
+attr resultdir results
+attr runnumber 0
+attr seedset 0
+config image-path ../../inet-4.5.4/images
+config description "100 sensors — quick test"
+config **.numSensors 100
+config network OGDCNetwork
+config sim-time-limit 11500s
+config **.numSensors 100
+config **.sensingRange 10m
+config **.radioRange 20m
+config **.areaSize 50m
+config **.initialEnergy 5000
+config **.roundTime 1000s
+config **.Td 0.01s
+config **.Ts 1s
+config **.Te 0.2s
+config seed-set 0
+config **.sensor[0].coverage.result-recording-modes all
+config **.sensor[0].activeNodes.result-recording-modes all
+
+par OGDCNetwork.sensor[0] typename "\"SensorNode\""
+par OGDCNetwork.sensor[0] sensingRange 10m
+attr unit m
+par OGDCNetwork.sensor[0] radioRange 20m
+attr unit m
+par OGDCNetwork.sensor[0] areaSize 50m
+attr unit m
+par OGDCNetwork.sensor[0] initialEnergy 5000
+par OGDCNetwork.sensor[0] roundTime 1000s
+attr unit s
+par OGDCNetwork.sensor[0] Td 0.01s
+attr unit s
+par OGDCNetwork.sensor[0] Ts 1s
+attr unit s
+par OGDCNetwork.sensor[0] Te 0.2s
+attr unit s
+scalar OGDCNetwork.sensor[0] activeNodes:last 94
+attr interpolationmode none
+attr recordingmode last
+attr title "Active nodes, last"
+scalar OGDCNetwork.sensor[0] coverage:last 1
+attr interpolationmode none
+attr recordingmode last
+attr title "Coverage ratio, last"
+par OGDCNetwork.sensor[1] typename "\"SensorNode\""
+par OGDCNetwork.sensor[1] sensingRange 10m
+attr unit m
+par OGDCNetwork.sensor[1] radioRange 20m
+attr unit m
+par OGDCNetwork.sensor[1] areaSize 50m
+attr unit m
+par OGDCNetwork.sensor[1] initialEnergy 5000
+par OGDCNetwork.sensor[1] roundTime 1000s
+attr unit s
+par OGDCNetwork.sensor[1] Td 0.01s
+attr unit s
+par OGDCNetwork.sensor[1] Ts 1s
+attr unit s
+par OGDCNetwork.sensor[1] Te 0.2s
+attr unit s
+scalar OGDCNetwork.sensor[1] activeNodes:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Active nodes, last"
+scalar OGDCNetwork.sensor[1] coverage:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Coverage ratio, last"
+par OGDCNetwork.sensor[2] typename "\"SensorNode\""
+par OGDCNetwork.sensor[2] sensingRange 10m
+attr unit m
+par OGDCNetwork.sensor[2] radioRange 20m
+attr unit m
+par OGDCNetwork.sensor[2] areaSize 50m
+attr unit m
+par OGDCNetwork.sensor[2] initialEnergy 5000
+par OGDCNetwork.sensor[2] roundTime 1000s
+attr unit s
+par OGDCNetwork.sensor[2] Td 0.01s
+attr unit s
+par OGDCNetwork.sensor[2] Ts 1s
+attr unit s
+par OGDCNetwork.sensor[2] Te 0.2s
+attr unit s
+scalar OGDCNetwork.sensor[2] activeNodes:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Active nodes, last"
+scalar OGDCNetwork.sensor[2] coverage:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Coverage ratio, last"
+par OGDCNetwork.sensor[3] typename "\"SensorNode\""
+par OGDCNetwork.sensor[3] sensingRange 10m
+attr unit m
+par OGDCNetwork.sensor[3] radioRange 20m
+attr unit m
+par OGDCNetwork.sensor[3] areaSize 50m
+attr unit m
+par OGDCNetwork.sensor[3] initialEnergy 5000
+par OGDCNetwork.sensor[3] roundTime 1000s
+attr unit s
+par OGDCNetwork.sensor[3] Td 0.01s
+attr unit s
+par OGDCNetwork.sensor[3] Ts 1s
+attr unit s
+par OGDCNetwork.sensor[3] Te 0.2s
+attr unit s
+scalar OGDCNetwork.sensor[3] activeNodes:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Active nodes, last"
+scalar OGDCNetwork.sensor[3] coverage:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Coverage ratio, last"
+par OGDCNetwork.sensor[4] typename "\"SensorNode\""
+par OGDCNetwork.sensor[4] sensingRange 10m
+attr unit m
+par OGDCNetwork.sensor[4] radioRange 20m
+attr unit m
+par OGDCNetwork.sensor[4] areaSize 50m
+attr unit m
+par OGDCNetwork.sensor[4] initialEnergy 5000
+par OGDCNetwork.sensor[4] roundTime 1000s
+attr unit s
+par OGDCNetwork.sensor[4] Td 0.01s
+attr unit s
+par OGDCNetwork.sensor[4] Ts 1s
+attr unit s
+par OGDCNetwork.sensor[4] Te 0.2s
+attr unit s
+scalar OGDCNetwork.sensor[4] activeNodes:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Active nodes, last"
+scalar OGDCNetwork.sensor[4] coverage:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Coverage ratio, last"
+par OGDCNetwork.sensor[5] typename "\"SensorNode\""
+par OGDCNetwork.sensor[5] sensingRange 10m
+attr unit m
+par OGDCNetwork.sensor[5] radioRange 20m
+attr unit m
+par OGDCNetwork.sensor[5] areaSize 50m
+attr unit m
+par OGDCNetwork.sensor[5] initialEnergy 5000
+par OGDCNetwork.sensor[5] roundTime 1000s
+attr unit s
+par OGDCNetwork.sensor[5] Td 0.01s
+attr unit s
+par OGDCNetwork.sensor[5] Ts 1s
+attr unit s
+par OGDCNetwork.sensor[5] Te 0.2s
+attr unit s
+scalar OGDCNetwork.sensor[5] activeNodes:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Active nodes, last"
+scalar OGDCNetwork.sensor[5] coverage:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Coverage ratio, last"
+par OGDCNetwork.sensor[6] typename "\"SensorNode\""
+par OGDCNetwork.sensor[6] sensingRange 10m
+attr unit m
+par OGDCNetwork.sensor[6] radioRange 20m
+attr unit m
+par OGDCNetwork.sensor[6] areaSize 50m
+attr unit m
+par OGDCNetwork.sensor[6] initialEnergy 5000
+par OGDCNetwork.sensor[6] roundTime 1000s
+attr unit s
+par OGDCNetwork.sensor[6] Td 0.01s
+attr unit s
+par OGDCNetwork.sensor[6] Ts 1s
+attr unit s
+par OGDCNetwork.sensor[6] Te 0.2s
+attr unit s
+scalar OGDCNetwork.sensor[6] activeNodes:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Active nodes, last"
+scalar OGDCNetwork.sensor[6] coverage:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Coverage ratio, last"
+par OGDCNetwork.sensor[7] typename "\"SensorNode\""
+par OGDCNetwork.sensor[7] sensingRange 10m
+attr unit m
+par OGDCNetwork.sensor[7] radioRange 20m
+attr unit m
+par OGDCNetwork.sensor[7] areaSize 50m
+attr unit m
+par OGDCNetwork.sensor[7] initialEnergy 5000
+par OGDCNetwork.sensor[7] roundTime 1000s
+attr unit s
+par OGDCNetwork.sensor[7] Td 0.01s
+attr unit s
+par OGDCNetwork.sensor[7] Ts 1s
+attr unit s
+par OGDCNetwork.sensor[7] Te 0.2s
+attr unit s
+scalar OGDCNetwork.sensor[7] activeNodes:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Active nodes, last"
+scalar OGDCNetwork.sensor[7] coverage:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Coverage ratio, last"
+par OGDCNetwork.sensor[8] typename "\"SensorNode\""
+par OGDCNetwork.sensor[8] sensingRange 10m
+attr unit m
+par OGDCNetwork.sensor[8] radioRange 20m
+attr unit m
+par OGDCNetwork.sensor[8] areaSize 50m
+attr unit m
+par OGDCNetwork.sensor[8] initialEnergy 5000
+par OGDCNetwork.sensor[8] roundTime 1000s
+attr unit s
+par OGDCNetwork.sensor[8] Td 0.01s
+attr unit s
+par OGDCNetwork.sensor[8] Ts 1s
+attr unit s
+par OGDCNetwork.sensor[8] Te 0.2s
+attr unit s
+scalar OGDCNetwork.sensor[8] activeNodes:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Active nodes, last"
+scalar OGDCNetwork.sensor[8] coverage:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Coverage ratio, last"
+par OGDCNetwork.sensor[9] typename "\"SensorNode\""
+par OGDCNetwork.sensor[9] sensingRange 10m
+attr unit m
+par OGDCNetwork.sensor[9] radioRange 20m
+attr unit m
+par OGDCNetwork.sensor[9] areaSize 50m
+attr unit m
+par OGDCNetwork.sensor[9] initialEnergy 5000
+par OGDCNetwork.sensor[9] roundTime 1000s
+attr unit s
+par OGDCNetwork.sensor[9] Td 0.01s
+attr unit s
+par OGDCNetwork.sensor[9] Ts 1s
+attr unit s
+par OGDCNetwork.sensor[9] Te 0.2s
+attr unit s
+scalar OGDCNetwork.sensor[9] activeNodes:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Active nodes, last"
+scalar OGDCNetwork.sensor[9] coverage:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Coverage ratio, last"
+par OGDCNetwork.sensor[10] typename "\"SensorNode\""
+par OGDCNetwork.sensor[10] sensingRange 10m
+attr unit m
+par OGDCNetwork.sensor[10] radioRange 20m
+attr unit m
+par OGDCNetwork.sensor[10] areaSize 50m
+attr unit m
+par OGDCNetwork.sensor[10] initialEnergy 5000
+par OGDCNetwork.sensor[10] roundTime 1000s
+attr unit s
+par OGDCNetwork.sensor[10] Td 0.01s
+attr unit s
+par OGDCNetwork.sensor[10] Ts 1s
+attr unit s
+par OGDCNetwork.sensor[10] Te 0.2s
+attr unit s
+scalar OGDCNetwork.sensor[10] activeNodes:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Active nodes, last"
+scalar OGDCNetwork.sensor[10] coverage:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Coverage ratio, last"
+par OGDCNetwork.sensor[11] typename "\"SensorNode\""
+par OGDCNetwork.sensor[11] sensingRange 10m
+attr unit m
+par OGDCNetwork.sensor[11] radioRange 20m
+attr unit m
+par OGDCNetwork.sensor[11] areaSize 50m
+attr unit m
+par OGDCNetwork.sensor[11] initialEnergy 5000
+par OGDCNetwork.sensor[11] roundTime 1000s
+attr unit s
+par OGDCNetwork.sensor[11] Td 0.01s
+attr unit s
+par OGDCNetwork.sensor[11] Ts 1s
+attr unit s
+par OGDCNetwork.sensor[11] Te 0.2s
+attr unit s
+scalar OGDCNetwork.sensor[11] activeNodes:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Active nodes, last"
+scalar OGDCNetwork.sensor[11] coverage:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Coverage ratio, last"
+par OGDCNetwork.sensor[12] typename "\"SensorNode\""
+par OGDCNetwork.sensor[12] sensingRange 10m
+attr unit m
+par OGDCNetwork.sensor[12] radioRange 20m
+attr unit m
+par OGDCNetwork.sensor[12] areaSize 50m
+attr unit m
+par OGDCNetwork.sensor[12] initialEnergy 5000
+par OGDCNetwork.sensor[12] roundTime 1000s
+attr unit s
+par OGDCNetwork.sensor[12] Td 0.01s
+attr unit s
+par OGDCNetwork.sensor[12] Ts 1s
+attr unit s
+par OGDCNetwork.sensor[12] Te 0.2s
+attr unit s
+scalar OGDCNetwork.sensor[12] activeNodes:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Active nodes, last"
+scalar OGDCNetwork.sensor[12] coverage:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Coverage ratio, last"
+par OGDCNetwork.sensor[13] typename "\"SensorNode\""
+par OGDCNetwork.sensor[13] sensingRange 10m
+attr unit m
+par OGDCNetwork.sensor[13] radioRange 20m
+attr unit m
+par OGDCNetwork.sensor[13] areaSize 50m
+attr unit m
+par OGDCNetwork.sensor[13] initialEnergy 5000
+par OGDCNetwork.sensor[13] roundTime 1000s
+attr unit s
+par OGDCNetwork.sensor[13] Td 0.01s
+attr unit s
+par OGDCNetwork.sensor[13] Ts 1s
+attr unit s
+par OGDCNetwork.sensor[13] Te 0.2s
+attr unit s
+scalar OGDCNetwork.sensor[13] activeNodes:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Active nodes, last"
+scalar OGDCNetwork.sensor[13] coverage:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Coverage ratio, last"
+par OGDCNetwork.sensor[14] typename "\"SensorNode\""
+par OGDCNetwork.sensor[14] sensingRange 10m
+attr unit m
+par OGDCNetwork.sensor[14] radioRange 20m
+attr unit m
+par OGDCNetwork.sensor[14] areaSize 50m
+attr unit m
+par OGDCNetwork.sensor[14] initialEnergy 5000
+par OGDCNetwork.sensor[14] roundTime 1000s
+attr unit s
+par OGDCNetwork.sensor[14] Td 0.01s
+attr unit s
+par OGDCNetwork.sensor[14] Ts 1s
+attr unit s
+par OGDCNetwork.sensor[14] Te 0.2s
+attr unit s
+scalar OGDCNetwork.sensor[14] activeNodes:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Active nodes, last"
+scalar OGDCNetwork.sensor[14] coverage:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Coverage ratio, last"
+par OGDCNetwork.sensor[15] typename "\"SensorNode\""
+par OGDCNetwork.sensor[15] sensingRange 10m
+attr unit m
+par OGDCNetwork.sensor[15] radioRange 20m
+attr unit m
+par OGDCNetwork.sensor[15] areaSize 50m
+attr unit m
+par OGDCNetwork.sensor[15] initialEnergy 5000
+par OGDCNetwork.sensor[15] roundTime 1000s
+attr unit s
+par OGDCNetwork.sensor[15] Td 0.01s
+attr unit s
+par OGDCNetwork.sensor[15] Ts 1s
+attr unit s
+par OGDCNetwork.sensor[15] Te 0.2s
+attr unit s
+scalar OGDCNetwork.sensor[15] activeNodes:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Active nodes, last"
+scalar OGDCNetwork.sensor[15] coverage:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Coverage ratio, last"
+par OGDCNetwork.sensor[16] typename "\"SensorNode\""
+par OGDCNetwork.sensor[16] sensingRange 10m
+attr unit m
+par OGDCNetwork.sensor[16] radioRange 20m
+attr unit m
+par OGDCNetwork.sensor[16] areaSize 50m
+attr unit m
+par OGDCNetwork.sensor[16] initialEnergy 5000
+par OGDCNetwork.sensor[16] roundTime 1000s
+attr unit s
+par OGDCNetwork.sensor[16] Td 0.01s
+attr unit s
+par OGDCNetwork.sensor[16] Ts 1s
+attr unit s
+par OGDCNetwork.sensor[16] Te 0.2s
+attr unit s
+scalar OGDCNetwork.sensor[16] activeNodes:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Active nodes, last"
+scalar OGDCNetwork.sensor[16] coverage:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Coverage ratio, last"
+par OGDCNetwork.sensor[17] typename "\"SensorNode\""
+par OGDCNetwork.sensor[17] sensingRange 10m
+attr unit m
+par OGDCNetwork.sensor[17] radioRange 20m
+attr unit m
+par OGDCNetwork.sensor[17] areaSize 50m
+attr unit m
+par OGDCNetwork.sensor[17] initialEnergy 5000
+par OGDCNetwork.sensor[17] roundTime 1000s
+attr unit s
+par OGDCNetwork.sensor[17] Td 0.01s
+attr unit s
+par OGDCNetwork.sensor[17] Ts 1s
+attr unit s
+par OGDCNetwork.sensor[17] Te 0.2s
+attr unit s
+scalar OGDCNetwork.sensor[17] activeNodes:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Active nodes, last"
+scalar OGDCNetwork.sensor[17] coverage:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Coverage ratio, last"
+par OGDCNetwork.sensor[18] typename "\"SensorNode\""
+par OGDCNetwork.sensor[18] sensingRange 10m
+attr unit m
+par OGDCNetwork.sensor[18] radioRange 20m
+attr unit m
+par OGDCNetwork.sensor[18] areaSize 50m
+attr unit m
+par OGDCNetwork.sensor[18] initialEnergy 5000
+par OGDCNetwork.sensor[18] roundTime 1000s
+attr unit s
+par OGDCNetwork.sensor[18] Td 0.01s
+attr unit s
+par OGDCNetwork.sensor[18] Ts 1s
+attr unit s
+par OGDCNetwork.sensor[18] Te 0.2s
+attr unit s
+scalar OGDCNetwork.sensor[18] activeNodes:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Active nodes, last"
+scalar OGDCNetwork.sensor[18] coverage:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Coverage ratio, last"
+par OGDCNetwork.sensor[19] typename "\"SensorNode\""
+par OGDCNetwork.sensor[19] sensingRange 10m
+attr unit m
+par OGDCNetwork.sensor[19] radioRange 20m
+attr unit m
+par OGDCNetwork.sensor[19] areaSize 50m
+attr unit m
+par OGDCNetwork.sensor[19] initialEnergy 5000
+par OGDCNetwork.sensor[19] roundTime 1000s
+attr unit s
+par OGDCNetwork.sensor[19] Td 0.01s
+attr unit s
+par OGDCNetwork.sensor[19] Ts 1s
+attr unit s
+par OGDCNetwork.sensor[19] Te 0.2s
+attr unit s
+scalar OGDCNetwork.sensor[19] activeNodes:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Active nodes, last"
+scalar OGDCNetwork.sensor[19] coverage:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Coverage ratio, last"
+par OGDCNetwork.sensor[20] typename "\"SensorNode\""
+par OGDCNetwork.sensor[20] sensingRange 10m
+attr unit m
+par OGDCNetwork.sensor[20] radioRange 20m
+attr unit m
+par OGDCNetwork.sensor[20] areaSize 50m
+attr unit m
+par OGDCNetwork.sensor[20] initialEnergy 5000
+par OGDCNetwork.sensor[20] roundTime 1000s
+attr unit s
+par OGDCNetwork.sensor[20] Td 0.01s
+attr unit s
+par OGDCNetwork.sensor[20] Ts 1s
+attr unit s
+par OGDCNetwork.sensor[20] Te 0.2s
+attr unit s
+scalar OGDCNetwork.sensor[20] activeNodes:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Active nodes, last"
+scalar OGDCNetwork.sensor[20] coverage:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Coverage ratio, last"
+par OGDCNetwork.sensor[21] typename "\"SensorNode\""
+par OGDCNetwork.sensor[21] sensingRange 10m
+attr unit m
+par OGDCNetwork.sensor[21] radioRange 20m
+attr unit m
+par OGDCNetwork.sensor[21] areaSize 50m
+attr unit m
+par OGDCNetwork.sensor[21] initialEnergy 5000
+par OGDCNetwork.sensor[21] roundTime 1000s
+attr unit s
+par OGDCNetwork.sensor[21] Td 0.01s
+attr unit s
+par OGDCNetwork.sensor[21] Ts 1s
+attr unit s
+par OGDCNetwork.sensor[21] Te 0.2s
+attr unit s
+scalar OGDCNetwork.sensor[21] activeNodes:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Active nodes, last"
+scalar OGDCNetwork.sensor[21] coverage:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Coverage ratio, last"
+par OGDCNetwork.sensor[22] typename "\"SensorNode\""
+par OGDCNetwork.sensor[22] sensingRange 10m
+attr unit m
+par OGDCNetwork.sensor[22] radioRange 20m
+attr unit m
+par OGDCNetwork.sensor[22] areaSize 50m
+attr unit m
+par OGDCNetwork.sensor[22] initialEnergy 5000
+par OGDCNetwork.sensor[22] roundTime 1000s
+attr unit s
+par OGDCNetwork.sensor[22] Td 0.01s
+attr unit s
+par OGDCNetwork.sensor[22] Ts 1s
+attr unit s
+par OGDCNetwork.sensor[22] Te 0.2s
+attr unit s
+scalar OGDCNetwork.sensor[22] activeNodes:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Active nodes, last"
+scalar OGDCNetwork.sensor[22] coverage:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Coverage ratio, last"
+par OGDCNetwork.sensor[23] typename "\"SensorNode\""
+par OGDCNetwork.sensor[23] sensingRange 10m
+attr unit m
+par OGDCNetwork.sensor[23] radioRange 20m
+attr unit m
+par OGDCNetwork.sensor[23] areaSize 50m
+attr unit m
+par OGDCNetwork.sensor[23] initialEnergy 5000
+par OGDCNetwork.sensor[23] roundTime 1000s
+attr unit s
+par OGDCNetwork.sensor[23] Td 0.01s
+attr unit s
+par OGDCNetwork.sensor[23] Ts 1s
+attr unit s
+par OGDCNetwork.sensor[23] Te 0.2s
+attr unit s
+scalar OGDCNetwork.sensor[23] activeNodes:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Active nodes, last"
+scalar OGDCNetwork.sensor[23] coverage:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Coverage ratio, last"
+par OGDCNetwork.sensor[24] typename "\"SensorNode\""
+par OGDCNetwork.sensor[24] sensingRange 10m
+attr unit m
+par OGDCNetwork.sensor[24] radioRange 20m
+attr unit m
+par OGDCNetwork.sensor[24] areaSize 50m
+attr unit m
+par OGDCNetwork.sensor[24] initialEnergy 5000
+par OGDCNetwork.sensor[24] roundTime 1000s
+attr unit s
+par OGDCNetwork.sensor[24] Td 0.01s
+attr unit s
+par OGDCNetwork.sensor[24] Ts 1s
+attr unit s
+par OGDCNetwork.sensor[24] Te 0.2s
+attr unit s
+scalar OGDCNetwork.sensor[24] activeNodes:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Active nodes, last"
+scalar OGDCNetwork.sensor[24] coverage:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Coverage ratio, last"
+par OGDCNetwork.sensor[25] typename "\"SensorNode\""
+par OGDCNetwork.sensor[25] sensingRange 10m
+attr unit m
+par OGDCNetwork.sensor[25] radioRange 20m
+attr unit m
+par OGDCNetwork.sensor[25] areaSize 50m
+attr unit m
+par OGDCNetwork.sensor[25] initialEnergy 5000
+par OGDCNetwork.sensor[25] roundTime 1000s
+attr unit s
+par OGDCNetwork.sensor[25] Td 0.01s
+attr unit s
+par OGDCNetwork.sensor[25] Ts 1s
+attr unit s
+par OGDCNetwork.sensor[25] Te 0.2s
+attr unit s
+scalar OGDCNetwork.sensor[25] activeNodes:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Active nodes, last"
+scalar OGDCNetwork.sensor[25] coverage:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Coverage ratio, last"
+par OGDCNetwork.sensor[26] typename "\"SensorNode\""
+par OGDCNetwork.sensor[26] sensingRange 10m
+attr unit m
+par OGDCNetwork.sensor[26] radioRange 20m
+attr unit m
+par OGDCNetwork.sensor[26] areaSize 50m
+attr unit m
+par OGDCNetwork.sensor[26] initialEnergy 5000
+par OGDCNetwork.sensor[26] roundTime 1000s
+attr unit s
+par OGDCNetwork.sensor[26] Td 0.01s
+attr unit s
+par OGDCNetwork.sensor[26] Ts 1s
+attr unit s
+par OGDCNetwork.sensor[26] Te 0.2s
+attr unit s
+scalar OGDCNetwork.sensor[26] activeNodes:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Active nodes, last"
+scalar OGDCNetwork.sensor[26] coverage:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Coverage ratio, last"
+par OGDCNetwork.sensor[27] typename "\"SensorNode\""
+par OGDCNetwork.sensor[27] sensingRange 10m
+attr unit m
+par OGDCNetwork.sensor[27] radioRange 20m
+attr unit m
+par OGDCNetwork.sensor[27] areaSize 50m
+attr unit m
+par OGDCNetwork.sensor[27] initialEnergy 5000
+par OGDCNetwork.sensor[27] roundTime 1000s
+attr unit s
+par OGDCNetwork.sensor[27] Td 0.01s
+attr unit s
+par OGDCNetwork.sensor[27] Ts 1s
+attr unit s
+par OGDCNetwork.sensor[27] Te 0.2s
+attr unit s
+scalar OGDCNetwork.sensor[27] activeNodes:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Active nodes, last"
+scalar OGDCNetwork.sensor[27] coverage:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Coverage ratio, last"
+par OGDCNetwork.sensor[28] typename "\"SensorNode\""
+par OGDCNetwork.sensor[28] sensingRange 10m
+attr unit m
+par OGDCNetwork.sensor[28] radioRange 20m
+attr unit m
+par OGDCNetwork.sensor[28] areaSize 50m
+attr unit m
+par OGDCNetwork.sensor[28] initialEnergy 5000
+par OGDCNetwork.sensor[28] roundTime 1000s
+attr unit s
+par OGDCNetwork.sensor[28] Td 0.01s
+attr unit s
+par OGDCNetwork.sensor[28] Ts 1s
+attr unit s
+par OGDCNetwork.sensor[28] Te 0.2s
+attr unit s
+scalar OGDCNetwork.sensor[28] activeNodes:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Active nodes, last"
+scalar OGDCNetwork.sensor[28] coverage:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Coverage ratio, last"
+par OGDCNetwork.sensor[29] typename "\"SensorNode\""
+par OGDCNetwork.sensor[29] sensingRange 10m
+attr unit m
+par OGDCNetwork.sensor[29] radioRange 20m
+attr unit m
+par OGDCNetwork.sensor[29] areaSize 50m
+attr unit m
+par OGDCNetwork.sensor[29] initialEnergy 5000
+par OGDCNetwork.sensor[29] roundTime 1000s
+attr unit s
+par OGDCNetwork.sensor[29] Td 0.01s
+attr unit s
+par OGDCNetwork.sensor[29] Ts 1s
+attr unit s
+par OGDCNetwork.sensor[29] Te 0.2s
+attr unit s
+scalar OGDCNetwork.sensor[29] activeNodes:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Active nodes, last"
+scalar OGDCNetwork.sensor[29] coverage:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Coverage ratio, last"
+par OGDCNetwork.sensor[30] typename "\"SensorNode\""
+par OGDCNetwork.sensor[30] sensingRange 10m
+attr unit m
+par OGDCNetwork.sensor[30] radioRange 20m
+attr unit m
+par OGDCNetwork.sensor[30] areaSize 50m
+attr unit m
+par OGDCNetwork.sensor[30] initialEnergy 5000
+par OGDCNetwork.sensor[30] roundTime 1000s
+attr unit s
+par OGDCNetwork.sensor[30] Td 0.01s
+attr unit s
+par OGDCNetwork.sensor[30] Ts 1s
+attr unit s
+par OGDCNetwork.sensor[30] Te 0.2s
+attr unit s
+scalar OGDCNetwork.sensor[30] activeNodes:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Active nodes, last"
+scalar OGDCNetwork.sensor[30] coverage:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Coverage ratio, last"
+par OGDCNetwork.sensor[31] typename "\"SensorNode\""
+par OGDCNetwork.sensor[31] sensingRange 10m
+attr unit m
+par OGDCNetwork.sensor[31] radioRange 20m
+attr unit m
+par OGDCNetwork.sensor[31] areaSize 50m
+attr unit m
+par OGDCNetwork.sensor[31] initialEnergy 5000
+par OGDCNetwork.sensor[31] roundTime 1000s
+attr unit s
+par OGDCNetwork.sensor[31] Td 0.01s
+attr unit s
+par OGDCNetwork.sensor[31] Ts 1s
+attr unit s
+par OGDCNetwork.sensor[31] Te 0.2s
+attr unit s
+scalar OGDCNetwork.sensor[31] activeNodes:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Active nodes, last"
+scalar OGDCNetwork.sensor[31] coverage:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Coverage ratio, last"
+par OGDCNetwork.sensor[32] typename "\"SensorNode\""
+par OGDCNetwork.sensor[32] sensingRange 10m
+attr unit m
+par OGDCNetwork.sensor[32] radioRange 20m
+attr unit m
+par OGDCNetwork.sensor[32] areaSize 50m
+attr unit m
+par OGDCNetwork.sensor[32] initialEnergy 5000
+par OGDCNetwork.sensor[32] roundTime 1000s
+attr unit s
+par OGDCNetwork.sensor[32] Td 0.01s
+attr unit s
+par OGDCNetwork.sensor[32] Ts 1s
+attr unit s
+par OGDCNetwork.sensor[32] Te 0.2s
+attr unit s
+scalar OGDCNetwork.sensor[32] activeNodes:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Active nodes, last"
+scalar OGDCNetwork.sensor[32] coverage:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Coverage ratio, last"
+par OGDCNetwork.sensor[33] typename "\"SensorNode\""
+par OGDCNetwork.sensor[33] sensingRange 10m
+attr unit m
+par OGDCNetwork.sensor[33] radioRange 20m
+attr unit m
+par OGDCNetwork.sensor[33] areaSize 50m
+attr unit m
+par OGDCNetwork.sensor[33] initialEnergy 5000
+par OGDCNetwork.sensor[33] roundTime 1000s
+attr unit s
+par OGDCNetwork.sensor[33] Td 0.01s
+attr unit s
+par OGDCNetwork.sensor[33] Ts 1s
+attr unit s
+par OGDCNetwork.sensor[33] Te 0.2s
+attr unit s
+scalar OGDCNetwork.sensor[33] activeNodes:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Active nodes, last"
+scalar OGDCNetwork.sensor[33] coverage:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Coverage ratio, last"
+par OGDCNetwork.sensor[34] typename "\"SensorNode\""
+par OGDCNetwork.sensor[34] sensingRange 10m
+attr unit m
+par OGDCNetwork.sensor[34] radioRange 20m
+attr unit m
+par OGDCNetwork.sensor[34] areaSize 50m
+attr unit m
+par OGDCNetwork.sensor[34] initialEnergy 5000
+par OGDCNetwork.sensor[34] roundTime 1000s
+attr unit s
+par OGDCNetwork.sensor[34] Td 0.01s
+attr unit s
+par OGDCNetwork.sensor[34] Ts 1s
+attr unit s
+par OGDCNetwork.sensor[34] Te 0.2s
+attr unit s
+scalar OGDCNetwork.sensor[34] activeNodes:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Active nodes, last"
+scalar OGDCNetwork.sensor[34] coverage:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Coverage ratio, last"
+par OGDCNetwork.sensor[35] typename "\"SensorNode\""
+par OGDCNetwork.sensor[35] sensingRange 10m
+attr unit m
+par OGDCNetwork.sensor[35] radioRange 20m
+attr unit m
+par OGDCNetwork.sensor[35] areaSize 50m
+attr unit m
+par OGDCNetwork.sensor[35] initialEnergy 5000
+par OGDCNetwork.sensor[35] roundTime 1000s
+attr unit s
+par OGDCNetwork.sensor[35] Td 0.01s
+attr unit s
+par OGDCNetwork.sensor[35] Ts 1s
+attr unit s
+par OGDCNetwork.sensor[35] Te 0.2s
+attr unit s
+scalar OGDCNetwork.sensor[35] activeNodes:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Active nodes, last"
+scalar OGDCNetwork.sensor[35] coverage:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Coverage ratio, last"
+par OGDCNetwork.sensor[36] typename "\"SensorNode\""
+par OGDCNetwork.sensor[36] sensingRange 10m
+attr unit m
+par OGDCNetwork.sensor[36] radioRange 20m
+attr unit m
+par OGDCNetwork.sensor[36] areaSize 50m
+attr unit m
+par OGDCNetwork.sensor[36] initialEnergy 5000
+par OGDCNetwork.sensor[36] roundTime 1000s
+attr unit s
+par OGDCNetwork.sensor[36] Td 0.01s
+attr unit s
+par OGDCNetwork.sensor[36] Ts 1s
+attr unit s
+par OGDCNetwork.sensor[36] Te 0.2s
+attr unit s
+scalar OGDCNetwork.sensor[36] activeNodes:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Active nodes, last"
+scalar OGDCNetwork.sensor[36] coverage:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Coverage ratio, last"
+par OGDCNetwork.sensor[37] typename "\"SensorNode\""
+par OGDCNetwork.sensor[37] sensingRange 10m
+attr unit m
+par OGDCNetwork.sensor[37] radioRange 20m
+attr unit m
+par OGDCNetwork.sensor[37] areaSize 50m
+attr unit m
+par OGDCNetwork.sensor[37] initialEnergy 5000
+par OGDCNetwork.sensor[37] roundTime 1000s
+attr unit s
+par OGDCNetwork.sensor[37] Td 0.01s
+attr unit s
+par OGDCNetwork.sensor[37] Ts 1s
+attr unit s
+par OGDCNetwork.sensor[37] Te 0.2s
+attr unit s
+scalar OGDCNetwork.sensor[37] activeNodes:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Active nodes, last"
+scalar OGDCNetwork.sensor[37] coverage:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Coverage ratio, last"
+par OGDCNetwork.sensor[38] typename "\"SensorNode\""
+par OGDCNetwork.sensor[38] sensingRange 10m
+attr unit m
+par OGDCNetwork.sensor[38] radioRange 20m
+attr unit m
+par OGDCNetwork.sensor[38] areaSize 50m
+attr unit m
+par OGDCNetwork.sensor[38] initialEnergy 5000
+par OGDCNetwork.sensor[38] roundTime 1000s
+attr unit s
+par OGDCNetwork.sensor[38] Td 0.01s
+attr unit s
+par OGDCNetwork.sensor[38] Ts 1s
+attr unit s
+par OGDCNetwork.sensor[38] Te 0.2s
+attr unit s
+scalar OGDCNetwork.sensor[38] activeNodes:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Active nodes, last"
+scalar OGDCNetwork.sensor[38] coverage:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Coverage ratio, last"
+par OGDCNetwork.sensor[39] typename "\"SensorNode\""
+par OGDCNetwork.sensor[39] sensingRange 10m
+attr unit m
+par OGDCNetwork.sensor[39] radioRange 20m
+attr unit m
+par OGDCNetwork.sensor[39] areaSize 50m
+attr unit m
+par OGDCNetwork.sensor[39] initialEnergy 5000
+par OGDCNetwork.sensor[39] roundTime 1000s
+attr unit s
+par OGDCNetwork.sensor[39] Td 0.01s
+attr unit s
+par OGDCNetwork.sensor[39] Ts 1s
+attr unit s
+par OGDCNetwork.sensor[39] Te 0.2s
+attr unit s
+scalar OGDCNetwork.sensor[39] activeNodes:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Active nodes, last"
+scalar OGDCNetwork.sensor[39] coverage:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Coverage ratio, last"
+par OGDCNetwork.sensor[40] typename "\"SensorNode\""
+par OGDCNetwork.sensor[40] sensingRange 10m
+attr unit m
+par OGDCNetwork.sensor[40] radioRange 20m
+attr unit m
+par OGDCNetwork.sensor[40] areaSize 50m
+attr unit m
+par OGDCNetwork.sensor[40] initialEnergy 5000
+par OGDCNetwork.sensor[40] roundTime 1000s
+attr unit s
+par OGDCNetwork.sensor[40] Td 0.01s
+attr unit s
+par OGDCNetwork.sensor[40] Ts 1s
+attr unit s
+par OGDCNetwork.sensor[40] Te 0.2s
+attr unit s
+scalar OGDCNetwork.sensor[40] activeNodes:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Active nodes, last"
+scalar OGDCNetwork.sensor[40] coverage:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Coverage ratio, last"
+par OGDCNetwork.sensor[41] typename "\"SensorNode\""
+par OGDCNetwork.sensor[41] sensingRange 10m
+attr unit m
+par OGDCNetwork.sensor[41] radioRange 20m
+attr unit m
+par OGDCNetwork.sensor[41] areaSize 50m
+attr unit m
+par OGDCNetwork.sensor[41] initialEnergy 5000
+par OGDCNetwork.sensor[41] roundTime 1000s
+attr unit s
+par OGDCNetwork.sensor[41] Td 0.01s
+attr unit s
+par OGDCNetwork.sensor[41] Ts 1s
+attr unit s
+par OGDCNetwork.sensor[41] Te 0.2s
+attr unit s
+scalar OGDCNetwork.sensor[41] activeNodes:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Active nodes, last"
+scalar OGDCNetwork.sensor[41] coverage:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Coverage ratio, last"
+par OGDCNetwork.sensor[42] typename "\"SensorNode\""
+par OGDCNetwork.sensor[42] sensingRange 10m
+attr unit m
+par OGDCNetwork.sensor[42] radioRange 20m
+attr unit m
+par OGDCNetwork.sensor[42] areaSize 50m
+attr unit m
+par OGDCNetwork.sensor[42] initialEnergy 5000
+par OGDCNetwork.sensor[42] roundTime 1000s
+attr unit s
+par OGDCNetwork.sensor[42] Td 0.01s
+attr unit s
+par OGDCNetwork.sensor[42] Ts 1s
+attr unit s
+par OGDCNetwork.sensor[42] Te 0.2s
+attr unit s
+scalar OGDCNetwork.sensor[42] activeNodes:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Active nodes, last"
+scalar OGDCNetwork.sensor[42] coverage:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Coverage ratio, last"
+par OGDCNetwork.sensor[43] typename "\"SensorNode\""
+par OGDCNetwork.sensor[43] sensingRange 10m
+attr unit m
+par OGDCNetwork.sensor[43] radioRange 20m
+attr unit m
+par OGDCNetwork.sensor[43] areaSize 50m
+attr unit m
+par OGDCNetwork.sensor[43] initialEnergy 5000
+par OGDCNetwork.sensor[43] roundTime 1000s
+attr unit s
+par OGDCNetwork.sensor[43] Td 0.01s
+attr unit s
+par OGDCNetwork.sensor[43] Ts 1s
+attr unit s
+par OGDCNetwork.sensor[43] Te 0.2s
+attr unit s
+scalar OGDCNetwork.sensor[43] activeNodes:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Active nodes, last"
+scalar OGDCNetwork.sensor[43] coverage:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Coverage ratio, last"
+par OGDCNetwork.sensor[44] typename "\"SensorNode\""
+par OGDCNetwork.sensor[44] sensingRange 10m
+attr unit m
+par OGDCNetwork.sensor[44] radioRange 20m
+attr unit m
+par OGDCNetwork.sensor[44] areaSize 50m
+attr unit m
+par OGDCNetwork.sensor[44] initialEnergy 5000
+par OGDCNetwork.sensor[44] roundTime 1000s
+attr unit s
+par OGDCNetwork.sensor[44] Td 0.01s
+attr unit s
+par OGDCNetwork.sensor[44] Ts 1s
+attr unit s
+par OGDCNetwork.sensor[44] Te 0.2s
+attr unit s
+scalar OGDCNetwork.sensor[44] activeNodes:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Active nodes, last"
+scalar OGDCNetwork.sensor[44] coverage:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Coverage ratio, last"
+par OGDCNetwork.sensor[45] typename "\"SensorNode\""
+par OGDCNetwork.sensor[45] sensingRange 10m
+attr unit m
+par OGDCNetwork.sensor[45] radioRange 20m
+attr unit m
+par OGDCNetwork.sensor[45] areaSize 50m
+attr unit m
+par OGDCNetwork.sensor[45] initialEnergy 5000
+par OGDCNetwork.sensor[45] roundTime 1000s
+attr unit s
+par OGDCNetwork.sensor[45] Td 0.01s
+attr unit s
+par OGDCNetwork.sensor[45] Ts 1s
+attr unit s
+par OGDCNetwork.sensor[45] Te 0.2s
+attr unit s
+scalar OGDCNetwork.sensor[45] activeNodes:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Active nodes, last"
+scalar OGDCNetwork.sensor[45] coverage:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Coverage ratio, last"
+par OGDCNetwork.sensor[46] typename "\"SensorNode\""
+par OGDCNetwork.sensor[46] sensingRange 10m
+attr unit m
+par OGDCNetwork.sensor[46] radioRange 20m
+attr unit m
+par OGDCNetwork.sensor[46] areaSize 50m
+attr unit m
+par OGDCNetwork.sensor[46] initialEnergy 5000
+par OGDCNetwork.sensor[46] roundTime 1000s
+attr unit s
+par OGDCNetwork.sensor[46] Td 0.01s
+attr unit s
+par OGDCNetwork.sensor[46] Ts 1s
+attr unit s
+par OGDCNetwork.sensor[46] Te 0.2s
+attr unit s
+scalar OGDCNetwork.sensor[46] activeNodes:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Active nodes, last"
+scalar OGDCNetwork.sensor[46] coverage:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Coverage ratio, last"
+par OGDCNetwork.sensor[47] typename "\"SensorNode\""
+par OGDCNetwork.sensor[47] sensingRange 10m
+attr unit m
+par OGDCNetwork.sensor[47] radioRange 20m
+attr unit m
+par OGDCNetwork.sensor[47] areaSize 50m
+attr unit m
+par OGDCNetwork.sensor[47] initialEnergy 5000
+par OGDCNetwork.sensor[47] roundTime 1000s
+attr unit s
+par OGDCNetwork.sensor[47] Td 0.01s
+attr unit s
+par OGDCNetwork.sensor[47] Ts 1s
+attr unit s
+par OGDCNetwork.sensor[47] Te 0.2s
+attr unit s
+scalar OGDCNetwork.sensor[47] activeNodes:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Active nodes, last"
+scalar OGDCNetwork.sensor[47] coverage:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Coverage ratio, last"
+par OGDCNetwork.sensor[48] typename "\"SensorNode\""
+par OGDCNetwork.sensor[48] sensingRange 10m
+attr unit m
+par OGDCNetwork.sensor[48] radioRange 20m
+attr unit m
+par OGDCNetwork.sensor[48] areaSize 50m
+attr unit m
+par OGDCNetwork.sensor[48] initialEnergy 5000
+par OGDCNetwork.sensor[48] roundTime 1000s
+attr unit s
+par OGDCNetwork.sensor[48] Td 0.01s
+attr unit s
+par OGDCNetwork.sensor[48] Ts 1s
+attr unit s
+par OGDCNetwork.sensor[48] Te 0.2s
+attr unit s
+scalar OGDCNetwork.sensor[48] activeNodes:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Active nodes, last"
+scalar OGDCNetwork.sensor[48] coverage:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Coverage ratio, last"
+par OGDCNetwork.sensor[49] typename "\"SensorNode\""
+par OGDCNetwork.sensor[49] sensingRange 10m
+attr unit m
+par OGDCNetwork.sensor[49] radioRange 20m
+attr unit m
+par OGDCNetwork.sensor[49] areaSize 50m
+attr unit m
+par OGDCNetwork.sensor[49] initialEnergy 5000
+par OGDCNetwork.sensor[49] roundTime 1000s
+attr unit s
+par OGDCNetwork.sensor[49] Td 0.01s
+attr unit s
+par OGDCNetwork.sensor[49] Ts 1s
+attr unit s
+par OGDCNetwork.sensor[49] Te 0.2s
+attr unit s
+scalar OGDCNetwork.sensor[49] activeNodes:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Active nodes, last"
+scalar OGDCNetwork.sensor[49] coverage:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Coverage ratio, last"
+par OGDCNetwork.sensor[50] typename "\"SensorNode\""
+par OGDCNetwork.sensor[50] sensingRange 10m
+attr unit m
+par OGDCNetwork.sensor[50] radioRange 20m
+attr unit m
+par OGDCNetwork.sensor[50] areaSize 50m
+attr unit m
+par OGDCNetwork.sensor[50] initialEnergy 5000
+par OGDCNetwork.sensor[50] roundTime 1000s
+attr unit s
+par OGDCNetwork.sensor[50] Td 0.01s
+attr unit s
+par OGDCNetwork.sensor[50] Ts 1s
+attr unit s
+par OGDCNetwork.sensor[50] Te 0.2s
+attr unit s
+scalar OGDCNetwork.sensor[50] activeNodes:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Active nodes, last"
+scalar OGDCNetwork.sensor[50] coverage:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Coverage ratio, last"
+par OGDCNetwork.sensor[51] typename "\"SensorNode\""
+par OGDCNetwork.sensor[51] sensingRange 10m
+attr unit m
+par OGDCNetwork.sensor[51] radioRange 20m
+attr unit m
+par OGDCNetwork.sensor[51] areaSize 50m
+attr unit m
+par OGDCNetwork.sensor[51] initialEnergy 5000
+par OGDCNetwork.sensor[51] roundTime 1000s
+attr unit s
+par OGDCNetwork.sensor[51] Td 0.01s
+attr unit s
+par OGDCNetwork.sensor[51] Ts 1s
+attr unit s
+par OGDCNetwork.sensor[51] Te 0.2s
+attr unit s
+scalar OGDCNetwork.sensor[51] activeNodes:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Active nodes, last"
+scalar OGDCNetwork.sensor[51] coverage:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Coverage ratio, last"
+par OGDCNetwork.sensor[52] typename "\"SensorNode\""
+par OGDCNetwork.sensor[52] sensingRange 10m
+attr unit m
+par OGDCNetwork.sensor[52] radioRange 20m
+attr unit m
+par OGDCNetwork.sensor[52] areaSize 50m
+attr unit m
+par OGDCNetwork.sensor[52] initialEnergy 5000
+par OGDCNetwork.sensor[52] roundTime 1000s
+attr unit s
+par OGDCNetwork.sensor[52] Td 0.01s
+attr unit s
+par OGDCNetwork.sensor[52] Ts 1s
+attr unit s
+par OGDCNetwork.sensor[52] Te 0.2s
+attr unit s
+scalar OGDCNetwork.sensor[52] activeNodes:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Active nodes, last"
+scalar OGDCNetwork.sensor[52] coverage:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Coverage ratio, last"
+par OGDCNetwork.sensor[53] typename "\"SensorNode\""
+par OGDCNetwork.sensor[53] sensingRange 10m
+attr unit m
+par OGDCNetwork.sensor[53] radioRange 20m
+attr unit m
+par OGDCNetwork.sensor[53] areaSize 50m
+attr unit m
+par OGDCNetwork.sensor[53] initialEnergy 5000
+par OGDCNetwork.sensor[53] roundTime 1000s
+attr unit s
+par OGDCNetwork.sensor[53] Td 0.01s
+attr unit s
+par OGDCNetwork.sensor[53] Ts 1s
+attr unit s
+par OGDCNetwork.sensor[53] Te 0.2s
+attr unit s
+scalar OGDCNetwork.sensor[53] activeNodes:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Active nodes, last"
+scalar OGDCNetwork.sensor[53] coverage:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Coverage ratio, last"
+par OGDCNetwork.sensor[54] typename "\"SensorNode\""
+par OGDCNetwork.sensor[54] sensingRange 10m
+attr unit m
+par OGDCNetwork.sensor[54] radioRange 20m
+attr unit m
+par OGDCNetwork.sensor[54] areaSize 50m
+attr unit m
+par OGDCNetwork.sensor[54] initialEnergy 5000
+par OGDCNetwork.sensor[54] roundTime 1000s
+attr unit s
+par OGDCNetwork.sensor[54] Td 0.01s
+attr unit s
+par OGDCNetwork.sensor[54] Ts 1s
+attr unit s
+par OGDCNetwork.sensor[54] Te 0.2s
+attr unit s
+scalar OGDCNetwork.sensor[54] activeNodes:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Active nodes, last"
+scalar OGDCNetwork.sensor[54] coverage:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Coverage ratio, last"
+par OGDCNetwork.sensor[55] typename "\"SensorNode\""
+par OGDCNetwork.sensor[55] sensingRange 10m
+attr unit m
+par OGDCNetwork.sensor[55] radioRange 20m
+attr unit m
+par OGDCNetwork.sensor[55] areaSize 50m
+attr unit m
+par OGDCNetwork.sensor[55] initialEnergy 5000
+par OGDCNetwork.sensor[55] roundTime 1000s
+attr unit s
+par OGDCNetwork.sensor[55] Td 0.01s
+attr unit s
+par OGDCNetwork.sensor[55] Ts 1s
+attr unit s
+par OGDCNetwork.sensor[55] Te 0.2s
+attr unit s
+scalar OGDCNetwork.sensor[55] activeNodes:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Active nodes, last"
+scalar OGDCNetwork.sensor[55] coverage:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Coverage ratio, last"
+par OGDCNetwork.sensor[56] typename "\"SensorNode\""
+par OGDCNetwork.sensor[56] sensingRange 10m
+attr unit m
+par OGDCNetwork.sensor[56] radioRange 20m
+attr unit m
+par OGDCNetwork.sensor[56] areaSize 50m
+attr unit m
+par OGDCNetwork.sensor[56] initialEnergy 5000
+par OGDCNetwork.sensor[56] roundTime 1000s
+attr unit s
+par OGDCNetwork.sensor[56] Td 0.01s
+attr unit s
+par OGDCNetwork.sensor[56] Ts 1s
+attr unit s
+par OGDCNetwork.sensor[56] Te 0.2s
+attr unit s
+scalar OGDCNetwork.sensor[56] activeNodes:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Active nodes, last"
+scalar OGDCNetwork.sensor[56] coverage:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Coverage ratio, last"
+par OGDCNetwork.sensor[57] typename "\"SensorNode\""
+par OGDCNetwork.sensor[57] sensingRange 10m
+attr unit m
+par OGDCNetwork.sensor[57] radioRange 20m
+attr unit m
+par OGDCNetwork.sensor[57] areaSize 50m
+attr unit m
+par OGDCNetwork.sensor[57] initialEnergy 5000
+par OGDCNetwork.sensor[57] roundTime 1000s
+attr unit s
+par OGDCNetwork.sensor[57] Td 0.01s
+attr unit s
+par OGDCNetwork.sensor[57] Ts 1s
+attr unit s
+par OGDCNetwork.sensor[57] Te 0.2s
+attr unit s
+scalar OGDCNetwork.sensor[57] activeNodes:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Active nodes, last"
+scalar OGDCNetwork.sensor[57] coverage:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Coverage ratio, last"
+par OGDCNetwork.sensor[58] typename "\"SensorNode\""
+par OGDCNetwork.sensor[58] sensingRange 10m
+attr unit m
+par OGDCNetwork.sensor[58] radioRange 20m
+attr unit m
+par OGDCNetwork.sensor[58] areaSize 50m
+attr unit m
+par OGDCNetwork.sensor[58] initialEnergy 5000
+par OGDCNetwork.sensor[58] roundTime 1000s
+attr unit s
+par OGDCNetwork.sensor[58] Td 0.01s
+attr unit s
+par OGDCNetwork.sensor[58] Ts 1s
+attr unit s
+par OGDCNetwork.sensor[58] Te 0.2s
+attr unit s
+scalar OGDCNetwork.sensor[58] activeNodes:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Active nodes, last"
+scalar OGDCNetwork.sensor[58] coverage:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Coverage ratio, last"
+par OGDCNetwork.sensor[59] typename "\"SensorNode\""
+par OGDCNetwork.sensor[59] sensingRange 10m
+attr unit m
+par OGDCNetwork.sensor[59] radioRange 20m
+attr unit m
+par OGDCNetwork.sensor[59] areaSize 50m
+attr unit m
+par OGDCNetwork.sensor[59] initialEnergy 5000
+par OGDCNetwork.sensor[59] roundTime 1000s
+attr unit s
+par OGDCNetwork.sensor[59] Td 0.01s
+attr unit s
+par OGDCNetwork.sensor[59] Ts 1s
+attr unit s
+par OGDCNetwork.sensor[59] Te 0.2s
+attr unit s
+scalar OGDCNetwork.sensor[59] activeNodes:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Active nodes, last"
+scalar OGDCNetwork.sensor[59] coverage:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Coverage ratio, last"
+par OGDCNetwork.sensor[60] typename "\"SensorNode\""
+par OGDCNetwork.sensor[60] sensingRange 10m
+attr unit m
+par OGDCNetwork.sensor[60] radioRange 20m
+attr unit m
+par OGDCNetwork.sensor[60] areaSize 50m
+attr unit m
+par OGDCNetwork.sensor[60] initialEnergy 5000
+par OGDCNetwork.sensor[60] roundTime 1000s
+attr unit s
+par OGDCNetwork.sensor[60] Td 0.01s
+attr unit s
+par OGDCNetwork.sensor[60] Ts 1s
+attr unit s
+par OGDCNetwork.sensor[60] Te 0.2s
+attr unit s
+scalar OGDCNetwork.sensor[60] activeNodes:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Active nodes, last"
+scalar OGDCNetwork.sensor[60] coverage:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Coverage ratio, last"
+par OGDCNetwork.sensor[61] typename "\"SensorNode\""
+par OGDCNetwork.sensor[61] sensingRange 10m
+attr unit m
+par OGDCNetwork.sensor[61] radioRange 20m
+attr unit m
+par OGDCNetwork.sensor[61] areaSize 50m
+attr unit m
+par OGDCNetwork.sensor[61] initialEnergy 5000
+par OGDCNetwork.sensor[61] roundTime 1000s
+attr unit s
+par OGDCNetwork.sensor[61] Td 0.01s
+attr unit s
+par OGDCNetwork.sensor[61] Ts 1s
+attr unit s
+par OGDCNetwork.sensor[61] Te 0.2s
+attr unit s
+scalar OGDCNetwork.sensor[61] activeNodes:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Active nodes, last"
+scalar OGDCNetwork.sensor[61] coverage:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Coverage ratio, last"
+par OGDCNetwork.sensor[62] typename "\"SensorNode\""
+par OGDCNetwork.sensor[62] sensingRange 10m
+attr unit m
+par OGDCNetwork.sensor[62] radioRange 20m
+attr unit m
+par OGDCNetwork.sensor[62] areaSize 50m
+attr unit m
+par OGDCNetwork.sensor[62] initialEnergy 5000
+par OGDCNetwork.sensor[62] roundTime 1000s
+attr unit s
+par OGDCNetwork.sensor[62] Td 0.01s
+attr unit s
+par OGDCNetwork.sensor[62] Ts 1s
+attr unit s
+par OGDCNetwork.sensor[62] Te 0.2s
+attr unit s
+scalar OGDCNetwork.sensor[62] activeNodes:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Active nodes, last"
+scalar OGDCNetwork.sensor[62] coverage:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Coverage ratio, last"
+par OGDCNetwork.sensor[63] typename "\"SensorNode\""
+par OGDCNetwork.sensor[63] sensingRange 10m
+attr unit m
+par OGDCNetwork.sensor[63] radioRange 20m
+attr unit m
+par OGDCNetwork.sensor[63] areaSize 50m
+attr unit m
+par OGDCNetwork.sensor[63] initialEnergy 5000
+par OGDCNetwork.sensor[63] roundTime 1000s
+attr unit s
+par OGDCNetwork.sensor[63] Td 0.01s
+attr unit s
+par OGDCNetwork.sensor[63] Ts 1s
+attr unit s
+par OGDCNetwork.sensor[63] Te 0.2s
+attr unit s
+scalar OGDCNetwork.sensor[63] activeNodes:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Active nodes, last"
+scalar OGDCNetwork.sensor[63] coverage:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Coverage ratio, last"
+par OGDCNetwork.sensor[64] typename "\"SensorNode\""
+par OGDCNetwork.sensor[64] sensingRange 10m
+attr unit m
+par OGDCNetwork.sensor[64] radioRange 20m
+attr unit m
+par OGDCNetwork.sensor[64] areaSize 50m
+attr unit m
+par OGDCNetwork.sensor[64] initialEnergy 5000
+par OGDCNetwork.sensor[64] roundTime 1000s
+attr unit s
+par OGDCNetwork.sensor[64] Td 0.01s
+attr unit s
+par OGDCNetwork.sensor[64] Ts 1s
+attr unit s
+par OGDCNetwork.sensor[64] Te 0.2s
+attr unit s
+scalar OGDCNetwork.sensor[64] activeNodes:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Active nodes, last"
+scalar OGDCNetwork.sensor[64] coverage:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Coverage ratio, last"
+par OGDCNetwork.sensor[65] typename "\"SensorNode\""
+par OGDCNetwork.sensor[65] sensingRange 10m
+attr unit m
+par OGDCNetwork.sensor[65] radioRange 20m
+attr unit m
+par OGDCNetwork.sensor[65] areaSize 50m
+attr unit m
+par OGDCNetwork.sensor[65] initialEnergy 5000
+par OGDCNetwork.sensor[65] roundTime 1000s
+attr unit s
+par OGDCNetwork.sensor[65] Td 0.01s
+attr unit s
+par OGDCNetwork.sensor[65] Ts 1s
+attr unit s
+par OGDCNetwork.sensor[65] Te 0.2s
+attr unit s
+scalar OGDCNetwork.sensor[65] activeNodes:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Active nodes, last"
+scalar OGDCNetwork.sensor[65] coverage:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Coverage ratio, last"
+par OGDCNetwork.sensor[66] typename "\"SensorNode\""
+par OGDCNetwork.sensor[66] sensingRange 10m
+attr unit m
+par OGDCNetwork.sensor[66] radioRange 20m
+attr unit m
+par OGDCNetwork.sensor[66] areaSize 50m
+attr unit m
+par OGDCNetwork.sensor[66] initialEnergy 5000
+par OGDCNetwork.sensor[66] roundTime 1000s
+attr unit s
+par OGDCNetwork.sensor[66] Td 0.01s
+attr unit s
+par OGDCNetwork.sensor[66] Ts 1s
+attr unit s
+par OGDCNetwork.sensor[66] Te 0.2s
+attr unit s
+scalar OGDCNetwork.sensor[66] activeNodes:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Active nodes, last"
+scalar OGDCNetwork.sensor[66] coverage:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Coverage ratio, last"
+par OGDCNetwork.sensor[67] typename "\"SensorNode\""
+par OGDCNetwork.sensor[67] sensingRange 10m
+attr unit m
+par OGDCNetwork.sensor[67] radioRange 20m
+attr unit m
+par OGDCNetwork.sensor[67] areaSize 50m
+attr unit m
+par OGDCNetwork.sensor[67] initialEnergy 5000
+par OGDCNetwork.sensor[67] roundTime 1000s
+attr unit s
+par OGDCNetwork.sensor[67] Td 0.01s
+attr unit s
+par OGDCNetwork.sensor[67] Ts 1s
+attr unit s
+par OGDCNetwork.sensor[67] Te 0.2s
+attr unit s
+scalar OGDCNetwork.sensor[67] activeNodes:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Active nodes, last"
+scalar OGDCNetwork.sensor[67] coverage:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Coverage ratio, last"
+par OGDCNetwork.sensor[68] typename "\"SensorNode\""
+par OGDCNetwork.sensor[68] sensingRange 10m
+attr unit m
+par OGDCNetwork.sensor[68] radioRange 20m
+attr unit m
+par OGDCNetwork.sensor[68] areaSize 50m
+attr unit m
+par OGDCNetwork.sensor[68] initialEnergy 5000
+par OGDCNetwork.sensor[68] roundTime 1000s
+attr unit s
+par OGDCNetwork.sensor[68] Td 0.01s
+attr unit s
+par OGDCNetwork.sensor[68] Ts 1s
+attr unit s
+par OGDCNetwork.sensor[68] Te 0.2s
+attr unit s
+scalar OGDCNetwork.sensor[68] activeNodes:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Active nodes, last"
+scalar OGDCNetwork.sensor[68] coverage:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Coverage ratio, last"
+par OGDCNetwork.sensor[69] typename "\"SensorNode\""
+par OGDCNetwork.sensor[69] sensingRange 10m
+attr unit m
+par OGDCNetwork.sensor[69] radioRange 20m
+attr unit m
+par OGDCNetwork.sensor[69] areaSize 50m
+attr unit m
+par OGDCNetwork.sensor[69] initialEnergy 5000
+par OGDCNetwork.sensor[69] roundTime 1000s
+attr unit s
+par OGDCNetwork.sensor[69] Td 0.01s
+attr unit s
+par OGDCNetwork.sensor[69] Ts 1s
+attr unit s
+par OGDCNetwork.sensor[69] Te 0.2s
+attr unit s
+scalar OGDCNetwork.sensor[69] activeNodes:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Active nodes, last"
+scalar OGDCNetwork.sensor[69] coverage:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Coverage ratio, last"
+par OGDCNetwork.sensor[70] typename "\"SensorNode\""
+par OGDCNetwork.sensor[70] sensingRange 10m
+attr unit m
+par OGDCNetwork.sensor[70] radioRange 20m
+attr unit m
+par OGDCNetwork.sensor[70] areaSize 50m
+attr unit m
+par OGDCNetwork.sensor[70] initialEnergy 5000
+par OGDCNetwork.sensor[70] roundTime 1000s
+attr unit s
+par OGDCNetwork.sensor[70] Td 0.01s
+attr unit s
+par OGDCNetwork.sensor[70] Ts 1s
+attr unit s
+par OGDCNetwork.sensor[70] Te 0.2s
+attr unit s
+scalar OGDCNetwork.sensor[70] activeNodes:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Active nodes, last"
+scalar OGDCNetwork.sensor[70] coverage:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Coverage ratio, last"
+par OGDCNetwork.sensor[71] typename "\"SensorNode\""
+par OGDCNetwork.sensor[71] sensingRange 10m
+attr unit m
+par OGDCNetwork.sensor[71] radioRange 20m
+attr unit m
+par OGDCNetwork.sensor[71] areaSize 50m
+attr unit m
+par OGDCNetwork.sensor[71] initialEnergy 5000
+par OGDCNetwork.sensor[71] roundTime 1000s
+attr unit s
+par OGDCNetwork.sensor[71] Td 0.01s
+attr unit s
+par OGDCNetwork.sensor[71] Ts 1s
+attr unit s
+par OGDCNetwork.sensor[71] Te 0.2s
+attr unit s
+scalar OGDCNetwork.sensor[71] activeNodes:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Active nodes, last"
+scalar OGDCNetwork.sensor[71] coverage:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Coverage ratio, last"
+par OGDCNetwork.sensor[72] typename "\"SensorNode\""
+par OGDCNetwork.sensor[72] sensingRange 10m
+attr unit m
+par OGDCNetwork.sensor[72] radioRange 20m
+attr unit m
+par OGDCNetwork.sensor[72] areaSize 50m
+attr unit m
+par OGDCNetwork.sensor[72] initialEnergy 5000
+par OGDCNetwork.sensor[72] roundTime 1000s
+attr unit s
+par OGDCNetwork.sensor[72] Td 0.01s
+attr unit s
+par OGDCNetwork.sensor[72] Ts 1s
+attr unit s
+par OGDCNetwork.sensor[72] Te 0.2s
+attr unit s
+scalar OGDCNetwork.sensor[72] activeNodes:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Active nodes, last"
+scalar OGDCNetwork.sensor[72] coverage:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Coverage ratio, last"
+par OGDCNetwork.sensor[73] typename "\"SensorNode\""
+par OGDCNetwork.sensor[73] sensingRange 10m
+attr unit m
+par OGDCNetwork.sensor[73] radioRange 20m
+attr unit m
+par OGDCNetwork.sensor[73] areaSize 50m
+attr unit m
+par OGDCNetwork.sensor[73] initialEnergy 5000
+par OGDCNetwork.sensor[73] roundTime 1000s
+attr unit s
+par OGDCNetwork.sensor[73] Td 0.01s
+attr unit s
+par OGDCNetwork.sensor[73] Ts 1s
+attr unit s
+par OGDCNetwork.sensor[73] Te 0.2s
+attr unit s
+scalar OGDCNetwork.sensor[73] activeNodes:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Active nodes, last"
+scalar OGDCNetwork.sensor[73] coverage:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Coverage ratio, last"
+par OGDCNetwork.sensor[74] typename "\"SensorNode\""
+par OGDCNetwork.sensor[74] sensingRange 10m
+attr unit m
+par OGDCNetwork.sensor[74] radioRange 20m
+attr unit m
+par OGDCNetwork.sensor[74] areaSize 50m
+attr unit m
+par OGDCNetwork.sensor[74] initialEnergy 5000
+par OGDCNetwork.sensor[74] roundTime 1000s
+attr unit s
+par OGDCNetwork.sensor[74] Td 0.01s
+attr unit s
+par OGDCNetwork.sensor[74] Ts 1s
+attr unit s
+par OGDCNetwork.sensor[74] Te 0.2s
+attr unit s
+scalar OGDCNetwork.sensor[74] activeNodes:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Active nodes, last"
+scalar OGDCNetwork.sensor[74] coverage:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Coverage ratio, last"
+par OGDCNetwork.sensor[75] typename "\"SensorNode\""
+par OGDCNetwork.sensor[75] sensingRange 10m
+attr unit m
+par OGDCNetwork.sensor[75] radioRange 20m
+attr unit m
+par OGDCNetwork.sensor[75] areaSize 50m
+attr unit m
+par OGDCNetwork.sensor[75] initialEnergy 5000
+par OGDCNetwork.sensor[75] roundTime 1000s
+attr unit s
+par OGDCNetwork.sensor[75] Td 0.01s
+attr unit s
+par OGDCNetwork.sensor[75] Ts 1s
+attr unit s
+par OGDCNetwork.sensor[75] Te 0.2s
+attr unit s
+scalar OGDCNetwork.sensor[75] activeNodes:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Active nodes, last"
+scalar OGDCNetwork.sensor[75] coverage:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Coverage ratio, last"
+par OGDCNetwork.sensor[76] typename "\"SensorNode\""
+par OGDCNetwork.sensor[76] sensingRange 10m
+attr unit m
+par OGDCNetwork.sensor[76] radioRange 20m
+attr unit m
+par OGDCNetwork.sensor[76] areaSize 50m
+attr unit m
+par OGDCNetwork.sensor[76] initialEnergy 5000
+par OGDCNetwork.sensor[76] roundTime 1000s
+attr unit s
+par OGDCNetwork.sensor[76] Td 0.01s
+attr unit s
+par OGDCNetwork.sensor[76] Ts 1s
+attr unit s
+par OGDCNetwork.sensor[76] Te 0.2s
+attr unit s
+scalar OGDCNetwork.sensor[76] activeNodes:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Active nodes, last"
+scalar OGDCNetwork.sensor[76] coverage:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Coverage ratio, last"
+par OGDCNetwork.sensor[77] typename "\"SensorNode\""
+par OGDCNetwork.sensor[77] sensingRange 10m
+attr unit m
+par OGDCNetwork.sensor[77] radioRange 20m
+attr unit m
+par OGDCNetwork.sensor[77] areaSize 50m
+attr unit m
+par OGDCNetwork.sensor[77] initialEnergy 5000
+par OGDCNetwork.sensor[77] roundTime 1000s
+attr unit s
+par OGDCNetwork.sensor[77] Td 0.01s
+attr unit s
+par OGDCNetwork.sensor[77] Ts 1s
+attr unit s
+par OGDCNetwork.sensor[77] Te 0.2s
+attr unit s
+scalar OGDCNetwork.sensor[77] activeNodes:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Active nodes, last"
+scalar OGDCNetwork.sensor[77] coverage:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Coverage ratio, last"
+par OGDCNetwork.sensor[78] typename "\"SensorNode\""
+par OGDCNetwork.sensor[78] sensingRange 10m
+attr unit m
+par OGDCNetwork.sensor[78] radioRange 20m
+attr unit m
+par OGDCNetwork.sensor[78] areaSize 50m
+attr unit m
+par OGDCNetwork.sensor[78] initialEnergy 5000
+par OGDCNetwork.sensor[78] roundTime 1000s
+attr unit s
+par OGDCNetwork.sensor[78] Td 0.01s
+attr unit s
+par OGDCNetwork.sensor[78] Ts 1s
+attr unit s
+par OGDCNetwork.sensor[78] Te 0.2s
+attr unit s
+scalar OGDCNetwork.sensor[78] activeNodes:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Active nodes, last"
+scalar OGDCNetwork.sensor[78] coverage:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Coverage ratio, last"
+par OGDCNetwork.sensor[79] typename "\"SensorNode\""
+par OGDCNetwork.sensor[79] sensingRange 10m
+attr unit m
+par OGDCNetwork.sensor[79] radioRange 20m
+attr unit m
+par OGDCNetwork.sensor[79] areaSize 50m
+attr unit m
+par OGDCNetwork.sensor[79] initialEnergy 5000
+par OGDCNetwork.sensor[79] roundTime 1000s
+attr unit s
+par OGDCNetwork.sensor[79] Td 0.01s
+attr unit s
+par OGDCNetwork.sensor[79] Ts 1s
+attr unit s
+par OGDCNetwork.sensor[79] Te 0.2s
+attr unit s
+scalar OGDCNetwork.sensor[79] activeNodes:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Active nodes, last"
+scalar OGDCNetwork.sensor[79] coverage:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Coverage ratio, last"
+par OGDCNetwork.sensor[80] typename "\"SensorNode\""
+par OGDCNetwork.sensor[80] sensingRange 10m
+attr unit m
+par OGDCNetwork.sensor[80] radioRange 20m
+attr unit m
+par OGDCNetwork.sensor[80] areaSize 50m
+attr unit m
+par OGDCNetwork.sensor[80] initialEnergy 5000
+par OGDCNetwork.sensor[80] roundTime 1000s
+attr unit s
+par OGDCNetwork.sensor[80] Td 0.01s
+attr unit s
+par OGDCNetwork.sensor[80] Ts 1s
+attr unit s
+par OGDCNetwork.sensor[80] Te 0.2s
+attr unit s
+scalar OGDCNetwork.sensor[80] activeNodes:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Active nodes, last"
+scalar OGDCNetwork.sensor[80] coverage:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Coverage ratio, last"
+par OGDCNetwork.sensor[81] typename "\"SensorNode\""
+par OGDCNetwork.sensor[81] sensingRange 10m
+attr unit m
+par OGDCNetwork.sensor[81] radioRange 20m
+attr unit m
+par OGDCNetwork.sensor[81] areaSize 50m
+attr unit m
+par OGDCNetwork.sensor[81] initialEnergy 5000
+par OGDCNetwork.sensor[81] roundTime 1000s
+attr unit s
+par OGDCNetwork.sensor[81] Td 0.01s
+attr unit s
+par OGDCNetwork.sensor[81] Ts 1s
+attr unit s
+par OGDCNetwork.sensor[81] Te 0.2s
+attr unit s
+scalar OGDCNetwork.sensor[81] activeNodes:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Active nodes, last"
+scalar OGDCNetwork.sensor[81] coverage:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Coverage ratio, last"
+par OGDCNetwork.sensor[82] typename "\"SensorNode\""
+par OGDCNetwork.sensor[82] sensingRange 10m
+attr unit m
+par OGDCNetwork.sensor[82] radioRange 20m
+attr unit m
+par OGDCNetwork.sensor[82] areaSize 50m
+attr unit m
+par OGDCNetwork.sensor[82] initialEnergy 5000
+par OGDCNetwork.sensor[82] roundTime 1000s
+attr unit s
+par OGDCNetwork.sensor[82] Td 0.01s
+attr unit s
+par OGDCNetwork.sensor[82] Ts 1s
+attr unit s
+par OGDCNetwork.sensor[82] Te 0.2s
+attr unit s
+scalar OGDCNetwork.sensor[82] activeNodes:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Active nodes, last"
+scalar OGDCNetwork.sensor[82] coverage:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Coverage ratio, last"
+par OGDCNetwork.sensor[83] typename "\"SensorNode\""
+par OGDCNetwork.sensor[83] sensingRange 10m
+attr unit m
+par OGDCNetwork.sensor[83] radioRange 20m
+attr unit m
+par OGDCNetwork.sensor[83] areaSize 50m
+attr unit m
+par OGDCNetwork.sensor[83] initialEnergy 5000
+par OGDCNetwork.sensor[83] roundTime 1000s
+attr unit s
+par OGDCNetwork.sensor[83] Td 0.01s
+attr unit s
+par OGDCNetwork.sensor[83] Ts 1s
+attr unit s
+par OGDCNetwork.sensor[83] Te 0.2s
+attr unit s
+scalar OGDCNetwork.sensor[83] activeNodes:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Active nodes, last"
+scalar OGDCNetwork.sensor[83] coverage:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Coverage ratio, last"
+par OGDCNetwork.sensor[84] typename "\"SensorNode\""
+par OGDCNetwork.sensor[84] sensingRange 10m
+attr unit m
+par OGDCNetwork.sensor[84] radioRange 20m
+attr unit m
+par OGDCNetwork.sensor[84] areaSize 50m
+attr unit m
+par OGDCNetwork.sensor[84] initialEnergy 5000
+par OGDCNetwork.sensor[84] roundTime 1000s
+attr unit s
+par OGDCNetwork.sensor[84] Td 0.01s
+attr unit s
+par OGDCNetwork.sensor[84] Ts 1s
+attr unit s
+par OGDCNetwork.sensor[84] Te 0.2s
+attr unit s
+scalar OGDCNetwork.sensor[84] activeNodes:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Active nodes, last"
+scalar OGDCNetwork.sensor[84] coverage:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Coverage ratio, last"
+par OGDCNetwork.sensor[85] typename "\"SensorNode\""
+par OGDCNetwork.sensor[85] sensingRange 10m
+attr unit m
+par OGDCNetwork.sensor[85] radioRange 20m
+attr unit m
+par OGDCNetwork.sensor[85] areaSize 50m
+attr unit m
+par OGDCNetwork.sensor[85] initialEnergy 5000
+par OGDCNetwork.sensor[85] roundTime 1000s
+attr unit s
+par OGDCNetwork.sensor[85] Td 0.01s
+attr unit s
+par OGDCNetwork.sensor[85] Ts 1s
+attr unit s
+par OGDCNetwork.sensor[85] Te 0.2s
+attr unit s
+scalar OGDCNetwork.sensor[85] activeNodes:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Active nodes, last"
+scalar OGDCNetwork.sensor[85] coverage:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Coverage ratio, last"
+par OGDCNetwork.sensor[86] typename "\"SensorNode\""
+par OGDCNetwork.sensor[86] sensingRange 10m
+attr unit m
+par OGDCNetwork.sensor[86] radioRange 20m
+attr unit m
+par OGDCNetwork.sensor[86] areaSize 50m
+attr unit m
+par OGDCNetwork.sensor[86] initialEnergy 5000
+par OGDCNetwork.sensor[86] roundTime 1000s
+attr unit s
+par OGDCNetwork.sensor[86] Td 0.01s
+attr unit s
+par OGDCNetwork.sensor[86] Ts 1s
+attr unit s
+par OGDCNetwork.sensor[86] Te 0.2s
+attr unit s
+scalar OGDCNetwork.sensor[86] activeNodes:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Active nodes, last"
+scalar OGDCNetwork.sensor[86] coverage:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Coverage ratio, last"
+par OGDCNetwork.sensor[87] typename "\"SensorNode\""
+par OGDCNetwork.sensor[87] sensingRange 10m
+attr unit m
+par OGDCNetwork.sensor[87] radioRange 20m
+attr unit m
+par OGDCNetwork.sensor[87] areaSize 50m
+attr unit m
+par OGDCNetwork.sensor[87] initialEnergy 5000
+par OGDCNetwork.sensor[87] roundTime 1000s
+attr unit s
+par OGDCNetwork.sensor[87] Td 0.01s
+attr unit s
+par OGDCNetwork.sensor[87] Ts 1s
+attr unit s
+par OGDCNetwork.sensor[87] Te 0.2s
+attr unit s
+scalar OGDCNetwork.sensor[87] activeNodes:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Active nodes, last"
+scalar OGDCNetwork.sensor[87] coverage:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Coverage ratio, last"
+par OGDCNetwork.sensor[88] typename "\"SensorNode\""
+par OGDCNetwork.sensor[88] sensingRange 10m
+attr unit m
+par OGDCNetwork.sensor[88] radioRange 20m
+attr unit m
+par OGDCNetwork.sensor[88] areaSize 50m
+attr unit m
+par OGDCNetwork.sensor[88] initialEnergy 5000
+par OGDCNetwork.sensor[88] roundTime 1000s
+attr unit s
+par OGDCNetwork.sensor[88] Td 0.01s
+attr unit s
+par OGDCNetwork.sensor[88] Ts 1s
+attr unit s
+par OGDCNetwork.sensor[88] Te 0.2s
+attr unit s
+scalar OGDCNetwork.sensor[88] activeNodes:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Active nodes, last"
+scalar OGDCNetwork.sensor[88] coverage:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Coverage ratio, last"
+par OGDCNetwork.sensor[89] typename "\"SensorNode\""
+par OGDCNetwork.sensor[89] sensingRange 10m
+attr unit m
+par OGDCNetwork.sensor[89] radioRange 20m
+attr unit m
+par OGDCNetwork.sensor[89] areaSize 50m
+attr unit m
+par OGDCNetwork.sensor[89] initialEnergy 5000
+par OGDCNetwork.sensor[89] roundTime 1000s
+attr unit s
+par OGDCNetwork.sensor[89] Td 0.01s
+attr unit s
+par OGDCNetwork.sensor[89] Ts 1s
+attr unit s
+par OGDCNetwork.sensor[89] Te 0.2s
+attr unit s
+scalar OGDCNetwork.sensor[89] activeNodes:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Active nodes, last"
+scalar OGDCNetwork.sensor[89] coverage:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Coverage ratio, last"
+par OGDCNetwork.sensor[90] typename "\"SensorNode\""
+par OGDCNetwork.sensor[90] sensingRange 10m
+attr unit m
+par OGDCNetwork.sensor[90] radioRange 20m
+attr unit m
+par OGDCNetwork.sensor[90] areaSize 50m
+attr unit m
+par OGDCNetwork.sensor[90] initialEnergy 5000
+par OGDCNetwork.sensor[90] roundTime 1000s
+attr unit s
+par OGDCNetwork.sensor[90] Td 0.01s
+attr unit s
+par OGDCNetwork.sensor[90] Ts 1s
+attr unit s
+par OGDCNetwork.sensor[90] Te 0.2s
+attr unit s
+scalar OGDCNetwork.sensor[90] activeNodes:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Active nodes, last"
+scalar OGDCNetwork.sensor[90] coverage:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Coverage ratio, last"
+par OGDCNetwork.sensor[91] typename "\"SensorNode\""
+par OGDCNetwork.sensor[91] sensingRange 10m
+attr unit m
+par OGDCNetwork.sensor[91] radioRange 20m
+attr unit m
+par OGDCNetwork.sensor[91] areaSize 50m
+attr unit m
+par OGDCNetwork.sensor[91] initialEnergy 5000
+par OGDCNetwork.sensor[91] roundTime 1000s
+attr unit s
+par OGDCNetwork.sensor[91] Td 0.01s
+attr unit s
+par OGDCNetwork.sensor[91] Ts 1s
+attr unit s
+par OGDCNetwork.sensor[91] Te 0.2s
+attr unit s
+scalar OGDCNetwork.sensor[91] activeNodes:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Active nodes, last"
+scalar OGDCNetwork.sensor[91] coverage:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Coverage ratio, last"
+par OGDCNetwork.sensor[92] typename "\"SensorNode\""
+par OGDCNetwork.sensor[92] sensingRange 10m
+attr unit m
+par OGDCNetwork.sensor[92] radioRange 20m
+attr unit m
+par OGDCNetwork.sensor[92] areaSize 50m
+attr unit m
+par OGDCNetwork.sensor[92] initialEnergy 5000
+par OGDCNetwork.sensor[92] roundTime 1000s
+attr unit s
+par OGDCNetwork.sensor[92] Td 0.01s
+attr unit s
+par OGDCNetwork.sensor[92] Ts 1s
+attr unit s
+par OGDCNetwork.sensor[92] Te 0.2s
+attr unit s
+scalar OGDCNetwork.sensor[92] activeNodes:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Active nodes, last"
+scalar OGDCNetwork.sensor[92] coverage:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Coverage ratio, last"
+par OGDCNetwork.sensor[93] typename "\"SensorNode\""
+par OGDCNetwork.sensor[93] sensingRange 10m
+attr unit m
+par OGDCNetwork.sensor[93] radioRange 20m
+attr unit m
+par OGDCNetwork.sensor[93] areaSize 50m
+attr unit m
+par OGDCNetwork.sensor[93] initialEnergy 5000
+par OGDCNetwork.sensor[93] roundTime 1000s
+attr unit s
+par OGDCNetwork.sensor[93] Td 0.01s
+attr unit s
+par OGDCNetwork.sensor[93] Ts 1s
+attr unit s
+par OGDCNetwork.sensor[93] Te 0.2s
+attr unit s
+scalar OGDCNetwork.sensor[93] activeNodes:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Active nodes, last"
+scalar OGDCNetwork.sensor[93] coverage:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Coverage ratio, last"
+par OGDCNetwork.sensor[94] typename "\"SensorNode\""
+par OGDCNetwork.sensor[94] sensingRange 10m
+attr unit m
+par OGDCNetwork.sensor[94] radioRange 20m
+attr unit m
+par OGDCNetwork.sensor[94] areaSize 50m
+attr unit m
+par OGDCNetwork.sensor[94] initialEnergy 5000
+par OGDCNetwork.sensor[94] roundTime 1000s
+attr unit s
+par OGDCNetwork.sensor[94] Td 0.01s
+attr unit s
+par OGDCNetwork.sensor[94] Ts 1s
+attr unit s
+par OGDCNetwork.sensor[94] Te 0.2s
+attr unit s
+scalar OGDCNetwork.sensor[94] activeNodes:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Active nodes, last"
+scalar OGDCNetwork.sensor[94] coverage:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Coverage ratio, last"
+par OGDCNetwork.sensor[95] typename "\"SensorNode\""
+par OGDCNetwork.sensor[95] sensingRange 10m
+attr unit m
+par OGDCNetwork.sensor[95] radioRange 20m
+attr unit m
+par OGDCNetwork.sensor[95] areaSize 50m
+attr unit m
+par OGDCNetwork.sensor[95] initialEnergy 5000
+par OGDCNetwork.sensor[95] roundTime 1000s
+attr unit s
+par OGDCNetwork.sensor[95] Td 0.01s
+attr unit s
+par OGDCNetwork.sensor[95] Ts 1s
+attr unit s
+par OGDCNetwork.sensor[95] Te 0.2s
+attr unit s
+scalar OGDCNetwork.sensor[95] activeNodes:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Active nodes, last"
+scalar OGDCNetwork.sensor[95] coverage:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Coverage ratio, last"
+par OGDCNetwork.sensor[96] typename "\"SensorNode\""
+par OGDCNetwork.sensor[96] sensingRange 10m
+attr unit m
+par OGDCNetwork.sensor[96] radioRange 20m
+attr unit m
+par OGDCNetwork.sensor[96] areaSize 50m
+attr unit m
+par OGDCNetwork.sensor[96] initialEnergy 5000
+par OGDCNetwork.sensor[96] roundTime 1000s
+attr unit s
+par OGDCNetwork.sensor[96] Td 0.01s
+attr unit s
+par OGDCNetwork.sensor[96] Ts 1s
+attr unit s
+par OGDCNetwork.sensor[96] Te 0.2s
+attr unit s
+scalar OGDCNetwork.sensor[96] activeNodes:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Active nodes, last"
+scalar OGDCNetwork.sensor[96] coverage:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Coverage ratio, last"
+par OGDCNetwork.sensor[97] typename "\"SensorNode\""
+par OGDCNetwork.sensor[97] sensingRange 10m
+attr unit m
+par OGDCNetwork.sensor[97] radioRange 20m
+attr unit m
+par OGDCNetwork.sensor[97] areaSize 50m
+attr unit m
+par OGDCNetwork.sensor[97] initialEnergy 5000
+par OGDCNetwork.sensor[97] roundTime 1000s
+attr unit s
+par OGDCNetwork.sensor[97] Td 0.01s
+attr unit s
+par OGDCNetwork.sensor[97] Ts 1s
+attr unit s
+par OGDCNetwork.sensor[97] Te 0.2s
+attr unit s
+scalar OGDCNetwork.sensor[97] activeNodes:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Active nodes, last"
+scalar OGDCNetwork.sensor[97] coverage:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Coverage ratio, last"
+par OGDCNetwork.sensor[98] typename "\"SensorNode\""
+par OGDCNetwork.sensor[98] sensingRange 10m
+attr unit m
+par OGDCNetwork.sensor[98] radioRange 20m
+attr unit m
+par OGDCNetwork.sensor[98] areaSize 50m
+attr unit m
+par OGDCNetwork.sensor[98] initialEnergy 5000
+par OGDCNetwork.sensor[98] roundTime 1000s
+attr unit s
+par OGDCNetwork.sensor[98] Td 0.01s
+attr unit s
+par OGDCNetwork.sensor[98] Ts 1s
+attr unit s
+par OGDCNetwork.sensor[98] Te 0.2s
+attr unit s
+scalar OGDCNetwork.sensor[98] activeNodes:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Active nodes, last"
+scalar OGDCNetwork.sensor[98] coverage:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Coverage ratio, last"
+par OGDCNetwork.sensor[99] typename "\"SensorNode\""
+par OGDCNetwork.sensor[99] sensingRange 10m
+attr unit m
+par OGDCNetwork.sensor[99] radioRange 20m
+attr unit m
+par OGDCNetwork.sensor[99] areaSize 50m
+attr unit m
+par OGDCNetwork.sensor[99] initialEnergy 5000
+par OGDCNetwork.sensor[99] roundTime 1000s
+attr unit s
+par OGDCNetwork.sensor[99] Td 0.01s
+attr unit s
+par OGDCNetwork.sensor[99] Ts 1s
+attr unit s
+par OGDCNetwork.sensor[99] Te 0.2s
+attr unit s
+scalar OGDCNetwork.sensor[99] activeNodes:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Active nodes, last"
+scalar OGDCNetwork.sensor[99] coverage:last nan
+attr interpolationmode none
+attr recordingmode last
+attr title "Coverage ratio, last"
+par OGDCNetwork typename "\"OGDCNetwork\""
+par OGDCNetwork numSensors 100
+
