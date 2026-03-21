@@ -1,5 +1,3 @@
-
-
 #ifndef SENSORNODE_H_
 #define SENSORNODE_H_
 
@@ -47,6 +45,10 @@ class SensorNode : public cSimpleModule
 
     std::map<int,Neighbour> neighbours;
 
+    // Positions of active nodes this node has learned about this round
+    // (populated from received POWER_ON messages; used for redundancy check)
+    std::vector<std::pair<double,double>> knownActive;
+
     // Best pending cascade candidate (updated on each received POWER_ON)
     double bestTime    = 1e9;
     double bestPredX   = -1, bestPredY = -1;
@@ -75,6 +77,10 @@ class SensorNode : public cSimpleModule
                         double &t1x,double &t1y,
                         double &t2x,double &t2y);
     void computeCoverage();
+    // Returns true if this node's sensing area is already fully covered
+    // by the active nodes it has learned about — i.e., activating would
+    // add zero new coverage (redundant node).
+    bool isRedundant() const;
     void updateDisplay();
     void cancelTimer(cMessage *&t){ cancelAndDelete(t); t=nullptr; }
 

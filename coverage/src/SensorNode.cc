@@ -142,6 +142,7 @@ void SensorNode::startRound()
     hasPred     = false;
     bestTime    = 1e9;
     bestHasPred = false;
+    knownActive.clear();   // reset neighbourhood knowledge for the new round
     updateDisplay();
 
     // -- Volunteer timer ----------------------------------------------------
@@ -178,6 +179,22 @@ void SensorNode::startRound()
 void SensorNode::handlePowerOn(PowerOnMsg *m)
 {
     if (state != UNDECIDED) { delete m; return; }
+
+    // ── Update our knowledge of which nodes are active ─────────────────────
+    // Record the sender (and its predecessor if known) so isRedundant() has
+    // an accurate picture of already-covered area around us.
+    auto addKnown = [&](double x, double y) {
+        for (auto &k : knownActive)
+            if (std::fabs(k.first-x) < 1e-6 && std::fabs(k.second-y) < 1e-6) return;
+        knownActive.push_back({x, y});
+    };
+    addKnown(m->senderX, m->senderY);
+    if (m->hasPred && m->predX >= 0) addKnown(m->predX, m->predY);
+
+    // ── Redundancy check ───────────────────────────────────────────────────
+    // If every point on my sensing perimeter is already covered by a known
+    // active node, activating me adds zero new area → skip.
+    if (isRedundant()) { delete m; return; }
 
     // This node is now a CASCADE CANDIDATE, not a starting node
     cancelTimer(volunteerTimer);
@@ -298,6 +315,42 @@ void SensorNode::computeTargets(double ax, double ay,
 
 // ════════════════════════════════ Coverage & Display ═════════════════════════
 
+// Perimeter coverage check (based on Lemma 1 / CCP concept from the paper).
+//
+// We sample SAMPLES equally-spaced points on the boundary of this node's
+// sensing disk.  If EVERY sample point is within rs of at least one known
+// active neighbour, then this node's entire sensing area is already covered
+// by neighbours — activating it would add no new coverage (redundant).
+//
+// 36 samples (one every 10°) gives <1% geometric error and is fast to compute.
+bool SensorNode::isRedundant() const
+{
+    if (knownActive.empty()) return false;   // no active neighbours known → not redundant
+
+    const int    SAMPLES = 36;
+    const double TWO_PI  = 2.0 * M_PI;
+
+    for (int i = 0; i < SAMPLES; i++) {
+        double angle = TWO_PI * i / SAMPLES;
+        double px = posX + rs * std::cos(angle);
+        double py = posY + rs * std::sin(angle);
+
+        // Clamp to deployment area so boundary nodes aren't penalised
+        px = std::max(0.0, std::min(areaSize, px));
+        py = std::max(0.0, std::min(areaSize, py));
+
+        bool covered = false;
+        for (auto &a : knownActive) {
+            if (dist(px, py, a.first, a.second) <= rs) {
+                covered = true;
+                break;
+            }
+        }
+        if (!covered) return false;   // found an uncovered perimeter point
+    }
+    return true;   // all perimeter points covered → this node is redundant
+}
+
 void SensorNode::computeCoverage()
 {
     cModule *parent = getParentModule();
@@ -360,12 +413,30 @@ void SensorNode::computeCoverage()
 void SensorNode::updateDisplay()
 {
     if (!hasGUI()) return;
-    const char *fill = (state == ON)  ? "#00cc00" :
-                       (state == OFF) ? "#cc0000" : "#aaaaaa";
-    char buf[128];
-    std::snprintf(buf, sizeof(buf),
-                  "p=%.0f,%.0f;b=10,10,oval,%s,black,1",
-                  posX*10.0, posY*10.0, fill);
+
+    // Scale: world coords 0..areaSize -> display pixels 0..areaSize*10
+    const double SCALE = 10.0;
+
+    char buf[256];
+    if (state == ON) {
+        // Green ring sized to the sensing range — makes coverage immediately
+        // visible in the GUI.  Diameter in pixels = 2 * rs * SCALE.
+        double ringDiam = 2.0 * rs * SCALE;
+        std::snprintf(buf, sizeof(buf),
+            "p=%.0f,%.0f;b=%.0f,%.0f,oval,,#00cc00,2",
+            posX * SCALE, posY * SCALE,
+            ringDiam, ringDiam);
+    } else if (state == OFF) {
+        // Small red dot, no range ring
+        std::snprintf(buf, sizeof(buf),
+            "p=%.0f,%.0f;b=8,8,oval,#cc0000,black,1",
+            posX * SCALE, posY * SCALE);
+    } else {
+        // UNDECIDED: grey dot
+        std::snprintf(buf, sizeof(buf),
+            "p=%.0f,%.0f;b=8,8,oval,#aaaaaa,black,1",
+            posX * SCALE, posY * SCALE);
+    }
     getDisplayString().parse(buf);
 }
 
