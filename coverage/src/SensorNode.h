@@ -57,10 +57,11 @@ class SensorNode : public cSimpleModule
   public:
     enum State { UNDECIDED, ON, OFF } state = UNDECIDED;
     double posX = 0, posY = 0, rs = 10;
+    double energy = 0, initEnergy = 1;
 
   private:
     int    nodeId, numNodes;
-    double rc, energy, initEnergy, areaSize;
+    double rc, areaSize;
     double roundTime, Td, Ts, Te;
     int    roundCount = 0;
 

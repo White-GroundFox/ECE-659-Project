@@ -521,13 +521,19 @@ void SensorNode::computeCoverage()
     int n = parent->par("numSensors");
 
     std::vector<std::pair<double,double>> active;
-    int onCount = 0, offCount = 0;
+    int onCount = 0, offCount = 0, deadCount = 0;
 
     for (int i = 0; i < n; i++) {
         SensorNode *s = check_and_cast<SensorNode*>(
                             parent->getSubmodule("sensor", i));
-        if      (s->state == ON)  { active.push_back({s->posX, s->posY}); onCount++;  }
-        else if (s->state == OFF) { offCount++; }
+        if (s->energy <= 0.05 * s->initEnergy) {
+            deadCount++;                         // count as dead, not ON or OFF
+        } else if (s->state == ON) {
+            active.push_back({s->posX, s->posY});
+            onCount++;
+        } else if (s->state == OFF) {
+            offCount++;
+        }
     }
 
     // Fine grid: 5 cells per metre → 250×250 for a 50m area (0.04m² per cell)
@@ -550,6 +556,7 @@ void SensorNode::computeCoverage()
             << " Coordinator  : Node " << nodeId         << "\n"
             << " Active (ON)  : " << onCount             << "\n"
             << " Sleeping(OFF): " << offCount            << "\n"
+            << " Dead/Low bat : " << deadCount << "\n"
             << " Grid         : " << G << "x" << G
                                   << " (" << cs << "m)\n"
             << " Coverage     : " << cov * 100.0         << "%\n"
@@ -561,6 +568,7 @@ void SensorNode::computeCoverage()
     std::cout << " Coordinator  : Node " << nodeId            << std::endl;
     std::cout << " Active (ON)  : " << onCount                << std::endl;
     std::cout << " Sleeping(OFF): " << offCount               << std::endl;
+    std::cout << " Dead/Low bat : " << deadCount << std::endl;
     std::cout << " Grid         : " << G << "x" << G
               << " (" << cs << "m)"                          << std::endl;
     std::cout << " Coverage     : " << cov * 100.0 << "%"    << std::endl;
@@ -576,11 +584,17 @@ void SensorNode::updateDisplay()
     if (!hasGUI()) return;
     const double SCALE = 10.0;
     char buf[256];
-    if (state == ON) {
+    if (energy <= 0.05 * initEnergy) {
+        // Dead or low battery — solid black dot
+        std::snprintf(buf, sizeof(buf),
+            "p=%.0f,%.0f;b=10,10,oval,#000000,#000000,1",
+            posX * SCALE, posY * SCALE);
+    } else if (state == ON) {
         double ringDiam = 2.0 * rs * SCALE;
         std::snprintf(buf, sizeof(buf),
-            "p=%.0f,%.0f;b=%.0f,%.0f,oval,,#00cc00,2",
-            posX * SCALE, posY * SCALE, ringDiam, ringDiam);
+                "p=%.0f,%.0f;b=10,10,oval,#00cc00,#006600,1;r=%.0f,#00cc00",
+                posX * SCALE, posY * SCALE,
+                rs * SCALE);
     } else if (state == OFF) {
         std::snprintf(buf, sizeof(buf),
             "p=%.0f,%.0f;b=8,8,oval,#cc0000,black,1",
