@@ -45,7 +45,9 @@ enum SelfKind {
     KIND_STEADY           = 4,
     KIND_STATS            = 5,
     KIND_PRUNE            = 6,   // mid-round: pheromone decay + edge pruning
-    KIND_REDUNDANCY_CHECK = 7    // Phase 2: post-selection perimeter self-pruning
+    KIND_REDUNDANCY_CHECK = 7,    // Phase 2: post-selection perimeter self-pruning
+    KIND_DISPLAY_REFRESH  = 8
+
 };
 
 // ── Neighbour record ──────────────────────────────────────────────────────────
@@ -57,6 +59,7 @@ class SensorNode : public cSimpleModule
   public:
     enum State { UNDECIDED, ON, OFF } state = UNDECIDED;
     double posX = 0, posY = 0, rs = 10;
+    double getCurrentEnergy() const;
     double energy = 0, initEnergy = 1;
 
   private:
@@ -64,6 +67,8 @@ class SensorNode : public cSimpleModule
     double rc, areaSize;
     double roundTime, Td, Ts, Te;
     int    roundCount = 0;
+    simtime_t phaseStartTime   = 0;   // when current ON/OFF phase began
+    double    phaseStartEnergy = 0;   // energy at the start of current phase
 
     std::map<int,Neighbour> neighbours;
 
@@ -99,9 +104,10 @@ class SensorNode : public cSimpleModule
     cMessage *volunteerTimer  = nullptr;
     cMessage *selectTimer     = nullptr;
     cMessage *steadyTimer     = nullptr;
-    cMessage *statsTimer      = nullptr;
+    cMessage *statsTimer      = nullptr;   // per-round coverage report
     cMessage *pruneTimer      = nullptr;
     cMessage *redundancyTimer = nullptr;   // Phase 2 self-pruning
+    cMessage *refreshTimer    = nullptr;
 
     simsignal_t sigCoverage, sigActive;
 
@@ -128,6 +134,7 @@ class SensorNode : public cSimpleModule
     // ── Display & stats ───────────────────────────────────────────────────────
     void computeCoverage();
     void updateDisplay();
+
     void cancelTimer(cMessage *&t) { cancelAndDelete(t); t = nullptr; }
 
     double dist(double x1, double y1, double x2, double y2) const {

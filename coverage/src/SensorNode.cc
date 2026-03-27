@@ -89,10 +89,9 @@ void SensorNode::handleMessage(cMessage *msg)
         case KIND_ROUND: {
             delete msg; roundTimer = nullptr;
             if (roundCount > 0) {
-                double dt = roundTime - Ts;
-                energy -= (state == ON) ? dt * 4.0 / 100.0
-                                        : dt * 0.01 / 100.0;
-                energy = std::max(0.0, energy);
+                energy = getCurrentEnergy();
+                phaseStartTime   = simTime();
+                phaseStartEnergy = energy;
             }
             roundCount++;
             startRound();
@@ -155,7 +154,9 @@ void SensorNode::handleMessage(cMessage *msg)
             decayAndPruneEdges();
             break;
 
-        // ── Measure coverage ───────────────────────────────────────────────
+        // ── Per-round coverage report ───────────────────────────────────
+        // Fires once per round during steady state (after Phase 2 settles).
+        // Only the lowest-index alive node actually prints the report.
         case KIND_STATS: {
             delete msg; statsTimer = nullptr;
             cModule *par = getParentModule();
@@ -164,12 +165,22 @@ void SensorNode::handleMessage(cMessage *msg)
             for (int i = 0; i < n; i++) {
                 SensorNode *s = check_and_cast<SensorNode*>(
                                     par->getSubmodule("sensor", i));
-                if (s->energy > 0.0) { minAlive = i; break; }
+                if (s->getCurrentEnergy() > 0.0) { minAlive = i; break; }
             }
-            if (nodeId == minAlive) computeCoverage();
+            if (nodeId == minAlive)
+                computeCoverage();
             break;
         }
 
+        case KIND_DISPLAY_REFRESH:
+            delete msg; refreshTimer = nullptr;
+            updateDisplay();   // recheck energy ? may flip to black mid-round
+            // reschedule until end of round
+            if (simTime() < (roundCount * roundTime) - 1.0) {
+                refreshTimer = new cMessage("refresh", KIND_DISPLAY_REFRESH);
+                scheduleAt(simTime() + 50.0, refreshTimer);
+            }
+            break;
         default: delete msg;
         }
 
@@ -191,6 +202,7 @@ void SensorNode::startRound()
     cancelTimer(statsTimer);
     cancelTimer(pruneTimer);
     cancelTimer(redundancyTimer);
+    cancelTimer(refreshTimer);
 
     state           = UNDECIDED;
     hasPred         = false;
@@ -219,9 +231,7 @@ void SensorNode::startRound()
     pruneTimer = new cMessage("prune", KIND_PRUNE);
     scheduleAt(simTime() + roundTime * 0.5, pruneTimer);
 
-    // Stats: near end of steady phase
-    statsTimer = new cMessage("stats", KIND_STATS);
-    scheduleAt(simTime() + roundTime - 1.0, statsTimer);
+
 
     // Phase 2 redundancy check: fires at Ts + Te + jitter for ALL nodes.
     // The random jitter (uniform across Te) staggers the checks so nodes
@@ -230,7 +240,19 @@ void SensorNode::startRound()
     // correctly see fewer active neighbours → stay ON if needed.
     redundancyTimer = new cMessage("redcheck", KIND_REDUNDANCY_CHECK);
     scheduleAt(simTime() + Ts + Te + uniform(0, Te), redundancyTimer);
+
+    // Per-round report: fires after Phase 2 has fully settled (Ts + 3·Te),
+    // so all ON/OFF decisions are final and the report is accurate.
+    statsTimer = new cMessage("stats", KIND_STATS);
+    scheduleAt(simTime() + Ts + 3.0 * Te, statsTimer);
+
+    // Refresh display every 50s during steady phase so energy-depleted
+    // nodes visually turn black without waiting for a state change
+    refreshTimer = new cMessage("refresh", KIND_DISPLAY_REFRESH);
+    scheduleAt(simTime() + Ts + 50.0, refreshTimer);
+
 }
+
 
 // ════════════════════════════════ OGDC + Stigmergy Phase 1 ═══════════════════
 
@@ -294,6 +316,8 @@ void SensorNode::handlePowerOn(PowerOnMsg *m)
 void SensorNode::turnOn()
 {
     state = ON;
+    phaseStartTime   = simTime();
+    phaseStartEnergy = energy;
     cancelTimer(volunteerTimer);
     cancelTimer(selectTimer);
     energy -= 20.0 * Td / 100.0;
@@ -319,6 +343,8 @@ void SensorNode::turnOn()
 void SensorNode::turnOff()
 {
     state = OFF;
+    phaseStartTime   = simTime();
+    phaseStartEnergy = energy;
     updateDisplay();
 }
 
@@ -515,6 +541,14 @@ bool SensorNode::isPerimeterRedundant() const
 
 // ════════════════════════════════ Coverage & Display ═════════════════════════
 
+
+double SensorNode::getCurrentEnergy() const
+{
+    double rate = (state == ON) ? 4.0 / 100.0 : 0.01 / 100.0;
+    double elapsed = (simTime() - phaseStartTime).dbl();
+    return std::max(0.0, phaseStartEnergy - elapsed * rate);
+}
+
 void SensorNode::computeCoverage()
 {
     cModule *parent = getParentModule();
@@ -522,11 +556,18 @@ void SensorNode::computeCoverage()
 
     std::vector<std::pair<double,double>> active;
     int onCount = 0, offCount = 0, deadCount = 0;
+    double sumEnergy = 0.0, maxEnergy = 0.0, minEnergy = 1e9;
+    int    maxNode = -1, minNode = -1, avgNode = -1;
+    double avgDiff = 1e9;
 
     for (int i = 0; i < n; i++) {
         SensorNode *s = check_and_cast<SensorNode*>(
                             parent->getSubmodule("sensor", i));
-        if (s->energy <= 0.05 * s->initEnergy) {
+        double liveE = s->getCurrentEnergy();
+        sumEnergy += liveE;
+        if (liveE > maxEnergy) { maxEnergy = liveE; maxNode = i; }
+        if (liveE < minEnergy) { minEnergy = liveE; minNode = i; }
+        if (s->getCurrentEnergy() <= 0.05 * s->initEnergy) {
             deadCount++;                         // count as dead, not ON or OFF
         } else if (s->state == ON) {
             active.push_back({s->posX, s->posY});
@@ -549,21 +590,32 @@ void SensorNode::computeCoverage()
             }
         }
     }
+
+    double avgEnergy = sumEnergy / n;
+    for (int i = 0; i < n; i++) {
+        SensorNode *s = check_and_cast<SensorNode*>(
+                            parent->getSubmodule("sensor", i));
+        double diff = std::fabs(s->getCurrentEnergy() - avgEnergy);
+        if (diff < avgDiff) { avgDiff = diff; avgNode = i; }
+    }
+
     double cov = (double)covered / ((long long)G * G);
 
-    EV_INFO << "\n========================================\n"
-            << " Round        : " << roundCount          << "\n"
+    EV_INFO << "\n+---------- ROUND " << roundCount << " REPORT ----------+\n"
             << " Coordinator  : Node " << nodeId         << "\n"
             << " Active (ON)  : " << onCount             << "\n"
             << " Sleeping(OFF): " << offCount            << "\n"
             << " Dead/Low bat : " << deadCount << "\n"
             << " Grid         : " << G << "x" << G
                                   << " (" << cs << "m)\n"
+            << " Avg energy   : " << avgEnergy << " (Node " << avgNode << ")\n"
+            << " Max energy   : " << maxEnergy << " (Node " << maxNode << ")\n"
+            << " Min energy   : " << minEnergy << " (Node " << minNode << ")\n"
             << " Coverage     : " << cov * 100.0         << "%\n"
             << " Sim time     : " << simTime()           << "s\n"
-            << "========================================\n\n";
+            << "+--------------------------------------+\n\n";
 
-    std::cout << "\n========================================"  << std::endl;
+    std::cout << "\n+---------- ROUND " << roundCount << " REPORT ----------+\n" << std::endl;
     std::cout << " Round        : " << roundCount             << std::endl;
     std::cout << " Coordinator  : Node " << nodeId            << std::endl;
     std::cout << " Active (ON)  : " << onCount                << std::endl;
@@ -571,9 +623,14 @@ void SensorNode::computeCoverage()
     std::cout << " Dead/Low bat : " << deadCount << std::endl;
     std::cout << " Grid         : " << G << "x" << G
               << " (" << cs << "m)"                          << std::endl;
+    std::cout << " Avg energy   : " << avgEnergy << " (Node " << avgNode << ")" << std::endl;
+    std::cout << " Max energy   : " << maxEnergy << " (Node " << maxNode << ")" << std::endl;
+    std::cout << " Min energy   : " << minEnergy << " (Node " << minNode << ")" << std::endl;
     std::cout << " Coverage     : " << cov * 100.0 << "%"    << std::endl;
     std::cout << " Sim time     : " << simTime() << "s"      << std::endl;
-    std::cout << "========================================"   << std::endl;
+    std::cout << "+--------------------------------------+\n\n"   << std::endl;
+    std::cout.flush();
+    std::cerr.flush();
 
     emit(sigCoverage, cov);
     emit(sigActive,   (double)onCount);
@@ -584,7 +641,7 @@ void SensorNode::updateDisplay()
     if (!hasGUI()) return;
     const double SCALE = 10.0;
     char buf[256];
-    if (energy <= 0.05 * initEnergy) {
+    if (getCurrentEnergy() <= 0.05 * initEnergy) {
         // Dead or low battery — solid black dot
         std::snprintf(buf, sizeof(buf),
             "p=%.0f,%.0f;b=10,10,oval,#000000,#000000,1",
@@ -609,7 +666,17 @@ void SensorNode::updateDisplay()
 
 void SensorNode::finish()
 {
-    if (nodeId == 0) {
+    cModule *par = getParentModule();
+    int n = par->par("numSensors");
+    int minAlive = -1;
+    for (int i = 0; i < n; i++) {
+        SensorNode *s = check_and_cast<SensorNode*>(
+                            par->getSubmodule("sensor", i));
+        if (s->getCurrentEnergy() > 0.0) { minAlive = i; break; }
+    }
+    if (nodeId == minAlive) {
+        EV_INFO << "\n>>> SIMULATION FINISHED after "
+                << roundCount << " rounds <<<\n";
         std::cout << "\n>>> SIMULATION FINISHED after "
                   << roundCount << " rounds <<<" << std::endl;
         computeCoverage();
