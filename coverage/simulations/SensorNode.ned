@@ -12,6 +12,8 @@ simple SensorNode {
         double Td           @unit(s) = default(0.01s);
         double Ts           @unit(s) = default(1s);
         double Te           @unit(s) = default(0.2s);
+        bool   useGreedyMSC           = default(false);
+        double statsInterval @unit(s) = default(100s);  // coverage measurement interval for graphs
 		
 		@signal[coverage](type=double);
 		@signal[activeNodes](type=double);

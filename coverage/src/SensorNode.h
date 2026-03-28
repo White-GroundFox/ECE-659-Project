@@ -4,6 +4,7 @@
 #pragma once
 #include <omnetpp.h>
 #include <map>
+#include <set>
 #include <vector>
 #include <cmath>
 using namespace omnetpp;
@@ -24,17 +25,42 @@ class PowerOnMsg : public cMessage {
 };
 
 // ── COVERAGE_MARK stigmergy message ──────────────────────────────────────────
-// Broadcast when a node turns ON. Serves dual purpose:
-//   Phase 1 (during cascade 0..Ts): updates pheromone grid to bias timers
-//   Phase 2 (Ts..Ts+Te):            populates knownActive for perimeter pruning
 class CoverageMarkMsg : public cMessage {
   public:
-    int    senderId     = -1;
-    double senderX      = 0, senderY = 0;
-    double sensingRange = 0;
+    int    senderId        = -1;
+    double senderX         = 0, senderY = 0;
+    double sensingRange    = 0;
+    double remainingEnergy = 0;
 
     CoverageMarkMsg(const char *name = "COV_MARK") : cMessage(name, 101) {}
     virtual CoverageMarkMsg *dup() const override { return new CoverageMarkMsg(*this); }
+};
+
+// ── GROUP_SCORE message (Greedy-MSC Phase 3, step 1) ─────────────────────────
+// Broadcast by each sleep node at the start of the grouping phase.
+// Each node announces its contribution score and which active node (critical
+// target) it intends to cover.  After collecting all such messages from
+// neighbours, each node ranks itself and deterministically assigns a group.
+class GroupScoreMsg : public cMessage {
+  public:
+    int    senderId         = -1;
+    double score            = 0;
+    int    assignedActiveId = -1;
+
+    GroupScoreMsg(const char *name = "GRP_SCORE") : cMessage(name, 102) {}
+    virtual GroupScoreMsg *dup() const override { return new GroupScoreMsg(*this); }
+};
+
+// ── LOW_BATTERY_WARNING message ──────────────────────────────────────────────
+class LowBatteryWarningMsg : public cMessage {
+  public:
+    int    senderId           = -1;
+    double senderX            = 0, senderY = 0;
+    int    coveredActiveId    = -1;
+    double estimatedDeathTime = 0;
+
+    LowBatteryWarningMsg(const char *name = "LOW_BAT") : cMessage(name, 103) {}
+    virtual LowBatteryWarningMsg *dup() const override { return new LowBatteryWarningMsg(*this); }
 };
 
 // ── Self-message kinds ────────────────────────────────────────────────────────
@@ -44,14 +70,23 @@ enum SelfKind {
     KIND_SELECT           = 3,
     KIND_STEADY           = 4,
     KIND_STATS            = 5,
-    KIND_PRUNE            = 6,   // mid-round: pheromone decay + edge pruning
-    KIND_REDUNDANCY_CHECK = 7,    // Phase 2: post-selection perimeter self-pruning
-    KIND_DISPLAY_REFRESH  = 8
-
+    KIND_PRUNE            = 6,
+    KIND_REDUNDANCY_CHECK = 7,
+    KIND_DISPLAY_REFRESH  = 8,
+    KIND_GROUP_BROADCAST  = 9,   // Phase 3 step 1: broadcast score to neighbours
+    KIND_GROUPING         = 10,  // Phase 3 step 2: rank self and assign group
+    KIND_LOW_BATTERY      = 11,
+    KIND_WAKEUP           = 12
 };
 
 // ── Neighbour record ──────────────────────────────────────────────────────────
 struct Neighbour { int id; double x, y; };
+
+// ── Active neighbour info (for Greedy-MSC grouping) ───────────────────────────
+struct ActiveNeighbourInfo { int id; double x, y, energy; };
+
+// ── Collected score from a neighbouring sleep node ────────────────────────────
+struct NeighbourScore { int nodeId; double score; int assignedActiveId; };
 
 // ── SensorNode ────────────────────────────────────────────────────────────────
 class SensorNode : public cSimpleModule
@@ -67,28 +102,32 @@ class SensorNode : public cSimpleModule
     double rc, areaSize;
     double roundTime, Td, Ts, Te;
     int    roundCount = 0;
-    simtime_t phaseStartTime   = 0;   // when current ON/OFF phase began
-    double    phaseStartEnergy = 0;   // energy at the start of current phase
+    int    lastReportedRound = 0;
+    simtime_t roundStartTime   = 0;
+    simtime_t phaseStartTime   = 0;
+    double    phaseStartEnergy = 0;
 
     std::map<int,Neighbour> neighbours;
 
     // ── Stigmergy Phase 1 — pheromone grid ───────────────────────────────────
-    // Local grid tracking "how saturated" each area is from previous/current
-    // round activations. Used to add a penalty to the cascade select timer so
-    // nodes near already-covered areas lose the timer race to nodes in fresh areas.
-    std::vector<std::vector<double>> stigGrid;   // [gridRes][gridRes]
+    std::vector<std::vector<double>> stigGrid;
     int    gridRes  = 10;
     double cellSize = 5.0;
 
-    std::map<int,double> edgeWeight;   // cascade edge weights (Steps 3 & 4)
+    std::map<int,double> edgeWeight;
     int cascadeParentId = -1;
 
     // ── Stigmergy Phase 2 — perimeter pruning ────────────────────────────────
-    // After the cascade completes (at Ts), each ON node waits Te seconds while
-    // collecting positions of all other active nodes via CoverageMarkMsg.
-    // At Ts+Te it runs the 36-point perimeter check: if every boundary point of
-    // its sensing disk is covered by a known active neighbour, it turns OFF.
     std::vector<std::pair<double,double>> knownActive;
+
+    // ── Greedy-MSC Phase 3 — replacement grouping ────────────────────────────
+    bool useGreedyMSC = false;
+    std::vector<ActiveNeighbourInfo> knownActiveInfo;
+    int  myGroupNumber        = -1;
+    int  assignedActiveNodeId = -1;
+    double myGroupScore       = 0;
+    std::vector<NeighbourScore> collectedScores;   // from GroupScoreMsg
+    std::map<int, int> warningsReceived;
 
     // ── Cascade candidate tracking ────────────────────────────────────────────
     double bestTime    = 1e9;
@@ -100,14 +139,18 @@ class SensorNode : public cSimpleModule
     bool   hasPred = false;
 
     // ── Timers ────────────────────────────────────────────────────────────────
-    cMessage *roundTimer      = nullptr;
-    cMessage *volunteerTimer  = nullptr;
-    cMessage *selectTimer     = nullptr;
-    cMessage *steadyTimer     = nullptr;
-    cMessage *statsTimer      = nullptr;   // per-round coverage report
-    cMessage *pruneTimer      = nullptr;
-    cMessage *redundancyTimer = nullptr;   // Phase 2 self-pruning
-    cMessage *refreshTimer    = nullptr;
+    cMessage *roundTimer         = nullptr;
+    cMessage *volunteerTimer     = nullptr;
+    cMessage *selectTimer        = nullptr;
+    cMessage *steadyTimer        = nullptr;
+    cMessage *statsTimer         = nullptr;
+    cMessage *pruneTimer         = nullptr;
+    cMessage *redundancyTimer    = nullptr;
+    cMessage *refreshTimer       = nullptr;
+    cMessage *groupBroadcastTimer = nullptr;
+    cMessage *groupingTimer      = nullptr;
+    cMessage *lowBatteryTimer    = nullptr;
+    cMessage *wakeupTimer        = nullptr;
 
     simsignal_t sigCoverage, sigActive;
 
@@ -130,6 +173,14 @@ class SensorNode : public cSimpleModule
 
     // ── Stigmergy Phase 2 helpers ─────────────────────────────────────────────
     bool isPerimeterRedundant() const;
+
+    // ── Greedy-MSC Phase 3 helpers ────────────────────────────────────────────
+    void handleGroupScore(GroupScoreMsg *m);
+    void handleLowBatteryWarning(LowBatteryWarningMsg *m);
+    void broadcastGroupScore();
+    void computeGroupAssignment();
+    void broadcastLowBatteryWarning(int coveredId, double deathTime);
+    void turnOnAsReplacement();
 
     // ── Display & stats ───────────────────────────────────────────────────────
     void computeCoverage();
