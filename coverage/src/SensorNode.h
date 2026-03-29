@@ -125,8 +125,11 @@ class SensorNode : public cSimpleModule
     // ── Reselection — reactive coverage restoration ──────────────────────────
     bool   useReselection      = false;
     double coverageThreshold   = 0.90;
-    simtime_t lastReselectTime = -1;     // cooldown: prevent rapid retriggering
-    int    reselectCount       = 0;      // how many reselections so far
+    int    maxReselections     = 50;      // safety limit
+    simtime_t lastReselectTime = -1;      // cooldown: prevent rapid retriggering
+    int    reselectCount       = 0;       // how many reselections so far
+    double covAfterReselect    = -1;      // coverage measured after last reselection settled
+    bool   reselectGaveUp      = false;   // true = stop trying, not enough nodes
 
     // ── Cascade candidate tracking ────────────────────────────────────────────
     double bestTime    = 1e9;

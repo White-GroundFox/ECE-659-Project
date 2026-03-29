@@ -28,10 +28,10 @@ static constexpr int    PERIM_SAMPLES = 36;
 static constexpr double WAKEUP_BUFFER      = 30.0;
 static constexpr double LOW_BATTERY_THRESH = 0.05;
 
-// Reselection cooldown: minimum time between consecutive reselections.
-// Must be long enough for the cascade + pruning to settle (Ts + 3Te ≈ 1.6s)
-// plus some margin for the new active set to stabilize.
-static constexpr double RESELECT_COOLDOWN = 5.0;
+// Reselection cooldown: must be long enough for cascade (Ts) + pruning (3Te)
+// + at least one statsInterval measurement to verify the new set is stable.
+// Using Ts + 3Te + 2×statsInterval as minimum.
+static constexpr double RESELECT_COOLDOWN_BASE = 5.0;  // minimum base (Ts + 3Te + margin)
 
 
 // ════════════════════════════════ Initialisation ═════════════════════════════
@@ -53,6 +53,7 @@ void SensorNode::initialize(int stage)
         useGreedyMSC    = par("useGreedyMSC");
         useReselection  = par("useReselection");
         coverageThreshold = par("coverageThreshold");
+        maxReselections = par("maxReselections");
 
         posX = uniform(0, areaSize);
         posY = uniform(0, areaSize);
@@ -368,6 +369,8 @@ void SensorNode::startRound()
     if (useReselection) {
         lastReselectTime = -1;
         reselectCount    = 0;
+        covAfterReselect = -1;
+        reselectGaveUp   = false;
     }
 
     updateDisplay();
@@ -915,8 +918,11 @@ void SensorNode::computeCoverage(bool printReport)
                 << " Min energy   : " << minEnergy << " (Node " << minNode << ")\n"
                 << " Coverage     : " << cov * 100.0         << "%\n"
                 << " Sim time     : " << simTime()           << "s\n";
-        if (useReselection)
-            EV_INFO << " Reselections : " << reselectCount << "\n";
+        if (useReselection) {
+            EV_INFO << " Reselections : " << reselectCount;
+            if (reselectGaveUp) EV_INFO << " (gave up)";
+            EV_INFO << "\n";
+        }
         if (useGreedyMSC) {
             EV_INFO << " Greedy-MSC   : ON\n";
             for (auto &gc : groupCounts)
@@ -938,8 +944,11 @@ void SensorNode::computeCoverage(bool printReport)
         std::cout << " Min energy   : " << minEnergy << " (Node " << minNode << ")" << std::endl;
         std::cout << " Coverage     : " << cov * 100.0 << "%"     << std::endl;
         std::cout << " Sim time     : " << simTime() << "s"       << std::endl;
-        if (useReselection)
-            std::cout << " Reselections : " << reselectCount      << std::endl;
+        if (useReselection) {
+            std::cout << " Reselections : " << reselectCount;
+            if (reselectGaveUp) std::cout << " (gave up)";
+            std::cout << std::endl;
+        }
         if (useGreedyMSC) {
             std::cout << " Greedy-MSC   : ON"                     << std::endl;
             for (auto &gc : groupCounts)
@@ -954,18 +963,54 @@ void SensorNode::computeCoverage(bool printReport)
     emit(sigActive,   (double)onCount);
 
     // ── Reselection trigger check ─────────────────────────────────────────
-    // If reselection is enabled and coverage dropped below threshold,
-    // and cooldown has passed, trigger a new selection cascade.
-    if (useReselection && cov < coverageThreshold) {
+    if (useReselection && !reselectGaveUp && cov < coverageThreshold) {
+        // Dynamic cooldown: cascade needs Ts + 3Te to settle, plus at least
+        // 2 stats intervals to verify coverage is stable.
+        double statsInterval = par("statsInterval").doubleValue();
+        double cooldown = std::max(RESELECT_COOLDOWN_BASE,
+                                   Ts + 3.0 * Te + 2.0 * statsInterval);
+
         bool cooldownPassed = (lastReselectTime < 0 ||
-                               (simTime() - lastReselectTime).dbl() > RESELECT_COOLDOWN);
+                               (simTime() - lastReselectTime).dbl() > cooldown);
 
-        // Check if there are any OFF nodes with enough energy to participate
-        bool hasAvailableNodes = (offCount > 0);
+        if (cooldownPassed && offCount > 0) {
+            // If we already did a reselection and coverage STILL hasn't
+            // recovered above threshold after the cooldown, the network
+            // can no longer sustain the target coverage — stop trying.
+            if (reselectCount > 0 && covAfterReselect >= 0 &&
+                covAfterReselect < coverageThreshold)
+            {
+                reselectGaveUp = true;
+                EV_INFO << "[Node " << nodeId
+                        << "] Reselection gave up: coverage="
+                        << covAfterReselect * 100.0
+                        << "% after last reselect, threshold="
+                        << coverageThreshold * 100.0 << "%\n";
+                std::cout << "\n>>> RESELECTION gave up after "
+                          << reselectCount << " attempts — not enough nodes"
+                          << " to sustain " << coverageThreshold * 100.0
+                          << "% coverage <<<\n" << std::endl;
+                return;
+            }
 
-        if (cooldownPassed && hasAvailableNodes) {
+            // Safety limit
+            if (reselectCount >= maxReselections) {
+                reselectGaveUp = true;
+                std::cout << "\n>>> RESELECTION limit reached ("
+                          << maxReselections << ") <<<\n" << std::endl;
+                return;
+            }
+
+            // Record current coverage as the "post-settle" measurement
+            // for the PREVIOUS reselection (if any), then trigger a new one.
+            covAfterReselect = cov;
             triggerReselection();
         }
+    }
+    // If coverage is above threshold after a reselection, record it as
+    // successful so we know the next drop is a fresh event.
+    else if (useReselection && cov >= coverageThreshold && reselectCount > 0) {
+        covAfterReselect = cov;
     }
 }
 

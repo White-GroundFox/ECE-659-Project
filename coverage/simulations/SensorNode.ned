@@ -14,7 +14,8 @@ simple SensorNode {
         double Te           @unit(s) = default(0.2s);
         bool   useGreedyMSC           = default(false);
         bool   useReselection         = default(false);
-        double coverageThreshold      = default(0.90);  // trigger reselection below this ratio
+        double coverageThreshold      = default(0.90);
+        int    maxReselections        = default(50);    // safety limit on reselection attempts
         double statsInterval @unit(s) = default(100s);  // coverage measurement interval for graphs
 		
 		@signal[coverage](type=double);
