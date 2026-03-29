@@ -36,22 +36,7 @@ class CoverageMarkMsg : public cMessage {
     virtual CoverageMarkMsg *dup() const override { return new CoverageMarkMsg(*this); }
 };
 
-// ── GROUP_SCORE message (Greedy-MSC Phase 3, step 1) ─────────────────────────
-// Broadcast by each sleep node at the start of the grouping phase.
-// Each node announces its contribution score and which active node (critical
-// target) it intends to cover.  After collecting all such messages from
-// neighbours, each node ranks itself and deterministically assigns a group.
-class GroupScoreMsg : public cMessage {
-  public:
-    int    senderId         = -1;
-    double score            = 0;
-    int    assignedActiveId = -1;
-
-    GroupScoreMsg(const char *name = "GRP_SCORE") : cMessage(name, 102) {}
-    virtual GroupScoreMsg *dup() const override { return new GroupScoreMsg(*this); }
-};
-
-// ── LOW_BATTERY_WARNING message ──────────────────────────────────────────────
+// ── LOW_BATTERY_WARNING message (Greedy-MSC only) ────────────────────────────
 class LowBatteryWarningMsg : public cMessage {
   public:
     int    senderId           = -1;
@@ -61,6 +46,17 @@ class LowBatteryWarningMsg : public cMessage {
 
     LowBatteryWarningMsg(const char *name = "LOW_BAT") : cMessage(name, 103) {}
     virtual LowBatteryWarningMsg *dup() const override { return new LowBatteryWarningMsg(*this); }
+};
+
+// ── RESELECT_TRIGGER message ─────────────────────────────────────────────────
+// Broadcast by the coordinator when coverage drops below the threshold.
+// OFF nodes with sufficient energy re-enter UNDECIDED and run a new cascade.
+class ReselectTriggerMsg : public cMessage {
+  public:
+    int senderId = -1;
+
+    ReselectTriggerMsg(const char *name = "RESELECT") : cMessage(name, 104) {}
+    virtual ReselectTriggerMsg *dup() const override { return new ReselectTriggerMsg(*this); }
 };
 
 // ── Self-message kinds ────────────────────────────────────────────────────────
@@ -73,10 +69,11 @@ enum SelfKind {
     KIND_PRUNE            = 6,
     KIND_REDUNDANCY_CHECK = 7,
     KIND_DISPLAY_REFRESH  = 8,
-    KIND_GROUP_BROADCAST  = 9,   // Phase 3 step 1: broadcast score to neighbours
-    KIND_GROUPING         = 10,  // Phase 3 step 2: rank self and assign group
+    KIND_GROUPING         = 10,  // Greedy-MSC: local group assignment
     KIND_LOW_BATTERY      = 11,
-    KIND_WAKEUP           = 12
+    KIND_WAKEUP           = 12,
+    KIND_RESELECT_STEADY  = 13,  // Reselection: end of cascade window
+    KIND_RESELECT_REDUND  = 14   // Reselection: post-cascade pruning
 };
 
 // ── Neighbour record ──────────────────────────────────────────────────────────
@@ -84,9 +81,6 @@ struct Neighbour { int id; double x, y; };
 
 // ── Active neighbour info (for Greedy-MSC grouping) ───────────────────────────
 struct ActiveNeighbourInfo { int id; double x, y, energy; };
-
-// ── Collected score from a neighbouring sleep node ────────────────────────────
-struct NeighbourScore { int nodeId; double score; int assignedActiveId; };
 
 // ── SensorNode ────────────────────────────────────────────────────────────────
 class SensorNode : public cSimpleModule
@@ -126,8 +120,13 @@ class SensorNode : public cSimpleModule
     int  myGroupNumber        = -1;
     int  assignedActiveNodeId = -1;
     double myGroupScore       = 0;
-    std::vector<NeighbourScore> collectedScores;   // from GroupScoreMsg
     std::map<int, int> warningsReceived;
+
+    // ── Reselection — reactive coverage restoration ──────────────────────────
+    bool   useReselection      = false;
+    double coverageThreshold   = 0.90;
+    simtime_t lastReselectTime = -1;     // cooldown: prevent rapid retriggering
+    int    reselectCount       = 0;      // how many reselections so far
 
     // ── Cascade candidate tracking ────────────────────────────────────────────
     double bestTime    = 1e9;
@@ -147,10 +146,11 @@ class SensorNode : public cSimpleModule
     cMessage *pruneTimer         = nullptr;
     cMessage *redundancyTimer    = nullptr;
     cMessage *refreshTimer       = nullptr;
-    cMessage *groupBroadcastTimer = nullptr;
     cMessage *groupingTimer      = nullptr;
     cMessage *lowBatteryTimer    = nullptr;
     cMessage *wakeupTimer        = nullptr;
+    cMessage *reselectSteadyTimer = nullptr;
+    cMessage *reselectRedundTimer = nullptr;
 
     simsignal_t sigCoverage, sigActive;
 
@@ -175,15 +175,16 @@ class SensorNode : public cSimpleModule
     bool isPerimeterRedundant() const;
 
     // ── Greedy-MSC Phase 3 helpers ────────────────────────────────────────────
-    void handleGroupScore(GroupScoreMsg *m);
     void handleLowBatteryWarning(LowBatteryWarningMsg *m);
-    void broadcastGroupScore();
-    void computeGroupAssignment();
     void broadcastLowBatteryWarning(int coveredId, double deathTime);
     void turnOnAsReplacement();
 
+    // ── Reselection helpers ───────────────────────────────────────────────────
+    void triggerReselection();
+    void handleReselectTrigger(ReselectTriggerMsg *m);
+
     // ── Display & stats ───────────────────────────────────────────────────────
-    void computeCoverage();
+    void computeCoverage(bool printReport = true);
     void updateDisplay();
 
     void cancelTimer(cMessage *&t) { cancelAndDelete(t); t = nullptr; }
