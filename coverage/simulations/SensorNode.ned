@@ -13,10 +13,12 @@ simple SensorNode {
         double Ts           @unit(s) = default(1s);
         double Te           @unit(s) = default(0.2s);
         bool   useGreedyMSC           = default(false);
+        double clusterDistThreshold   = default(0.25);  // Phase 1 clustering similarity
+        double greedyW                = default(1.0);   // Greedy-MSC active time weight w
         bool   useReselection         = default(false);
         double coverageThreshold      = default(0.90);
-        int    maxReselections        = default(50);    // safety limit on reselection attempts
-        double statsInterval @unit(s) = default(100s);  // coverage measurement interval for graphs
+        int    maxReselections        = default(50);
+        double statsInterval @unit(s) = default(100s);
 		
 		@signal[coverage](type=double);
 		@signal[activeNodes](type=double);

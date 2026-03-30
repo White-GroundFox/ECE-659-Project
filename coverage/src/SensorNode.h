@@ -36,12 +36,38 @@ class CoverageMarkMsg : public cMessage {
     virtual CoverageMarkMsg *dup() const override { return new CoverageMarkMsg(*this); }
 };
 
-// ── LOW_BATTERY_WARNING message (Greedy-MSC only) ────────────────────────────
+// ── CLUSTER_INVITE message (Phase 1) ─────────────────────────────────────────
+// Broadcast by an active node to invite active neighbours into its cluster.
+// Cascades: a node that joins re-broadcasts with its own avgDist.
+class ClusterInviteMsg : public cMessage {
+  public:
+    int    senderId      = -1;
+    int    clusterHeadId = -1;   // original seed node of this cluster
+    double avgDist       = 0;    // sender's average distance to its active neighbours
+
+    ClusterInviteMsg(const char *name = "CLUSTER_INV") : cMessage(name, 105) {}
+    virtual ClusterInviteMsg *dup() const override { return new ClusterInviteMsg(*this); }
+};
+
+// ── CLUSTER_ANNOUNCE message (Phase 1 → Phase 2 bridge) ─────────────────────
+// Broadcast by each active node after clustering settles to tell all
+// neighbours (active + sleep) which cluster it belongs to.
+class ClusterAnnounceMsg : public cMessage {
+  public:
+    int senderId  = -1;
+    int clusterId = -1;
+
+    ClusterAnnounceMsg(const char *name = "CLUSTER_ANN") : cMessage(name, 106) {}
+    virtual ClusterAnnounceMsg *dup() const override { return new ClusterAnnounceMsg(*this); }
+};
+
+// ── LOW_BATTERY_WARNING message (Phase 4) ────────────────────────────────────
 class LowBatteryWarningMsg : public cMessage {
   public:
     int    senderId           = -1;
     double senderX            = 0, senderY = 0;
     int    coveredActiveId    = -1;
+    int    clusterId          = -1;
     double estimatedDeathTime = 0;
 
     LowBatteryWarningMsg(const char *name = "LOW_BAT") : cMessage(name, 103) {}
@@ -49,8 +75,6 @@ class LowBatteryWarningMsg : public cMessage {
 };
 
 // ── RESELECT_TRIGGER message ─────────────────────────────────────────────────
-// Broadcast by the coordinator when coverage drops below the threshold.
-// OFF nodes with sufficient energy re-enter UNDECIDED and run a new cascade.
 class ReselectTriggerMsg : public cMessage {
   public:
     int senderId = -1;
@@ -69,17 +93,19 @@ enum SelfKind {
     KIND_PRUNE            = 6,
     KIND_REDUNDANCY_CHECK = 7,
     KIND_DISPLAY_REFRESH  = 8,
-    KIND_GROUPING         = 10,  // Greedy-MSC: local group assignment
+    KIND_GROUPING         = 10,  // Phase 2+3: sleep node cluster assign + Greedy-MSC
     KIND_LOW_BATTERY      = 11,
     KIND_WAKEUP           = 12,
-    KIND_RESELECT_STEADY  = 13,  // Reselection: end of cascade window
-    KIND_RESELECT_REDUND  = 14   // Reselection: post-cascade pruning
+    KIND_RESELECT_STEADY  = 13,
+    KIND_RESELECT_REDUND  = 14,
+    KIND_CLUSTER_SEED     = 15,  // Phase 1: active node starts/joins clustering
+    KIND_CLUSTER_DONE     = 16   // Phase 1 end: finalize + announce cluster IDs
 };
 
 // ── Neighbour record ──────────────────────────────────────────────────────────
 struct Neighbour { int id; double x, y; };
 
-// ── Active neighbour info (for Greedy-MSC grouping) ───────────────────────────
+// ── Active neighbour info ─────────────────────────────────────────────────────
 struct ActiveNeighbourInfo { int id; double x, y, energy; };
 
 // ── SensorNode ────────────────────────────────────────────────────────────────
@@ -114,22 +140,32 @@ class SensorNode : public cSimpleModule
     // ── Stigmergy Phase 2 — perimeter pruning ────────────────────────────────
     std::vector<std::pair<double,double>> knownActive;
 
-    // ── Greedy-MSC Phase 3 — replacement grouping ────────────────────────────
-    bool useGreedyMSC = false;
+    // ── Greedy-MSC — shared state ────────────────────────────────────────────
+    bool   useGreedyMSC          = false;
+    double clusterDistThreshold  = 0.25;
+    double greedyW               = 1.0;
     std::vector<ActiveNeighbourInfo> knownActiveInfo;
-    int  myGroupNumber        = -1;
+
+    // ── Phase 1: active node clustering ──────────────────────────────────────
+    int    myClusterId       = -1;
+    double myAvgActiveDist   = 0;
+    std::map<int, int> activeNodeClusterMap;   // activeNodeId → clusterId (from announce)
+
+    // ── Phase 2+3: sleep node assignment + Greedy-MSC ────────────────────────
+    int  myGroupInCluster     = -1;
     int  assignedActiveNodeId = -1;
-    double myGroupScore       = 0;
+
+    // ── Phase 4: wake-up chain ───────────────────────────────────────────────
     std::map<int, int> warningsReceived;
 
     // ── Reselection — reactive coverage restoration ──────────────────────────
     bool   useReselection      = false;
     double coverageThreshold   = 0.90;
-    int    maxReselections     = 50;      // safety limit
-    simtime_t lastReselectTime = -1;      // cooldown: prevent rapid retriggering
-    int    reselectCount       = 0;       // how many reselections so far
-    double covAfterReselect    = -1;      // coverage measured after last reselection settled
-    bool   reselectGaveUp      = false;   // true = stop trying, not enough nodes
+    int    maxReselections     = 50;
+    simtime_t lastReselectTime = -1;
+    int    reselectCount       = 0;
+    double covAfterReselect    = -1;
+    bool   reselectGaveUp      = false;
 
     // ── Cascade candidate tracking ────────────────────────────────────────────
     double bestTime    = 1e9;
@@ -141,17 +177,19 @@ class SensorNode : public cSimpleModule
     bool   hasPred = false;
 
     // ── Timers ────────────────────────────────────────────────────────────────
-    cMessage *roundTimer         = nullptr;
-    cMessage *volunteerTimer     = nullptr;
-    cMessage *selectTimer        = nullptr;
-    cMessage *steadyTimer        = nullptr;
-    cMessage *statsTimer         = nullptr;
-    cMessage *pruneTimer         = nullptr;
-    cMessage *redundancyTimer    = nullptr;
-    cMessage *refreshTimer       = nullptr;
-    cMessage *groupingTimer      = nullptr;
-    cMessage *lowBatteryTimer    = nullptr;
-    cMessage *wakeupTimer        = nullptr;
+    cMessage *roundTimer          = nullptr;
+    cMessage *volunteerTimer      = nullptr;
+    cMessage *selectTimer         = nullptr;
+    cMessage *steadyTimer         = nullptr;
+    cMessage *statsTimer          = nullptr;
+    cMessage *pruneTimer          = nullptr;
+    cMessage *redundancyTimer     = nullptr;
+    cMessage *refreshTimer        = nullptr;
+    cMessage *clusterSeedTimer    = nullptr;
+    cMessage *clusterDoneTimer    = nullptr;
+    cMessage *groupingTimer       = nullptr;
+    cMessage *lowBatteryTimer     = nullptr;
+    cMessage *wakeupTimer         = nullptr;
     cMessage *reselectSteadyTimer = nullptr;
     cMessage *reselectRedundTimer = nullptr;
 
@@ -167,20 +205,25 @@ class SensorNode : public cSimpleModule
                         double &t1x, double &t1y,
                         double &t2x, double &t2y);
 
-    // ── Stigmergy Phase 1 helpers ─────────────────────────────────────────────
+    // ── Stigmergy helpers ─────────────────────────────────────────────────────
     void   markCoverage(double cx, double cy, double deposit = 1.0);
     double localCoverage(double cx, double cy) const;
     void   decayAndPruneEdges();
     void   broadcastCoverageMark();
     void   handleCoverageMark(CoverageMarkMsg *m);
+    bool   isPerimeterRedundant() const;
 
-    // ── Stigmergy Phase 2 helpers ─────────────────────────────────────────────
-    bool isPerimeterRedundant() const;
+    // ── Greedy-MSC Phase 1: clustering ────────────────────────────────────────
+    void handleClusterInvite(ClusterInviteMsg *m);
+    void handleClusterAnnounce(ClusterAnnounceMsg *m);
+    void broadcastClusterInvite();
+    void broadcastClusterAnnounce();
 
-    // ── Greedy-MSC Phase 3 helpers ────────────────────────────────────────────
+    // ── Greedy-MSC Phase 4: wake-up chain ─────────────────────────────────────
     void handleLowBatteryWarning(LowBatteryWarningMsg *m);
-    void broadcastLowBatteryWarning(int coveredId, double deathTime);
+    void broadcastLowBatteryWarning(int coveredId, int clustId, double deathTime);
     void turnOnAsReplacement();
+    void scheduleLowBatteryWarning();
 
     // ── Reselection helpers ───────────────────────────────────────────────────
     void triggerReselection();

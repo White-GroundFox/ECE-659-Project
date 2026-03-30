@@ -10,28 +10,20 @@ Define_Module(SensorNode);
 //  Tuning constants
 // ════════════════════════════════════════════════════════════════════════════
 
-// Pheromone grid (Phase 1 — cascade bias)
 static constexpr double PHEROMONE_DEPOSIT      = 1.00;
 static constexpr double PHEROMONE_DECAY        = 0.80;
 static constexpr double PHEROMONE_SENSE_THRESH = 0.25;
 static constexpr double COVERAGE_BIAS          = 0.25;
 
-// Cascade edge weights (Steps 3 & 4)
 static constexpr double EDGE_REINFORCE    = 0.50;
 static constexpr double EDGE_DECAY        = 0.85;
 static constexpr double EDGE_PRUNE_THRESH = 0.10;
 
-// Phase 2 perimeter check
 static constexpr int    PERIM_SAMPLES = 36;
 
-// Greedy-MSC
 static constexpr double WAKEUP_BUFFER      = 30.0;
 static constexpr double LOW_BATTERY_THRESH = 0.05;
-
-// Reselection cooldown: must be long enough for cascade (Ts) + pruning (3Te)
-// + at least one statsInterval measurement to verify the new set is stable.
-// Using Ts + 3Te + 2×statsInterval as minimum.
-static constexpr double RESELECT_COOLDOWN_BASE = 5.0;  // minimum base (Ts + 3Te + margin)
+static constexpr double RESELECT_COOLDOWN_BASE = 5.0;
 
 
 // ════════════════════════════════ Initialisation ═════════════════════════════
@@ -50,10 +42,12 @@ void SensorNode::initialize(int stage)
         Td = par("Td");
         Ts = par("Ts");
         Te = par("Te");
-        useGreedyMSC    = par("useGreedyMSC");
-        useReselection  = par("useReselection");
-        coverageThreshold = par("coverageThreshold");
-        maxReselections = par("maxReselections");
+        useGreedyMSC         = par("useGreedyMSC");
+        clusterDistThreshold = par("clusterDistThreshold");
+        greedyW              = par("greedyW");
+        useReselection       = par("useReselection");
+        coverageThreshold    = par("coverageThreshold");
+        maxReselections      = par("maxReselections");
 
         posX = uniform(0, areaSize);
         posY = uniform(0, areaSize);
@@ -111,23 +105,17 @@ void SensorNode::handleMessage(cMessage *msg)
             break;
         }
 
-        // ── Volunteer as starting node ─────────────────────────────────────
         case KIND_VOLUNTEER:
             delete msg; volunteerTimer = nullptr;
             if (state == UNDECIDED) {
-                EV_INFO << "[Node " << nodeId
-                        << "] volunteers (energy=" << energy << ")\n";
-                hasPred         = false;
-                cascadeParentId = -1;
+                hasPred = false; cascadeParentId = -1;
                 turnOn();
             }
             break;
 
-        // ── Selected by cascade ────────────────────────────────────────────
         case KIND_SELECT:
             delete msg; selectTimer = nullptr;
             if (state == UNDECIDED) {
-                EV_INFO << "[Node " << nodeId << "] selected by cascade\n";
                 hasPred         = bestHasPred;
                 predX           = bestPredX;
                 predY           = bestPredY;
@@ -136,25 +124,20 @@ void SensorNode::handleMessage(cMessage *msg)
             }
             break;
 
-        // ── End of selection phase: remaining UNDECIDED → OFF ─────────────
         case KIND_STEADY:
             delete msg; steadyTimer = nullptr;
             if (state == UNDECIDED) turnOff();
             break;
 
-        // ── Phase 2: post-selection perimeter pruning ──────────────────────
         case KIND_REDUNDANCY_CHECK: {
             delete msg; redundancyTimer = nullptr;
             if (state == ON && isPerimeterRedundant()) {
-                EV_INFO << "[Node " << nodeId
-                        << "] Phase-2 pruned: perimeter fully covered by "
-                        << knownActive.size() << " known active neighbours\n";
+                EV_INFO << "[Node " << nodeId << "] Phase-2 pruned\n";
                 turnOff();
             }
             break;
         }
 
-        // ── Step 4: Pheromone decay + edge pruning ─────────────────────────
         case KIND_PRUNE:
             delete msg; pruneTimer = nullptr;
             decayAndPruneEdges();
@@ -171,14 +154,11 @@ void SensorNode::handleMessage(cMessage *msg)
                                     parent->getSubmodule("sensor", i));
                 if (s->getCurrentEnergy() > 0.0) { minAlive = i; break; }
             }
-
             bool firstFire = (lastReportedRound != roundCount);
             if (nodeId == minAlive)
                 computeCoverage(firstFire);
-            if (firstFire)
-                lastReportedRound = roundCount;
+            if (firstFire) lastReportedRound = roundCount;
 
-            // Reschedule
             double statsInterval = par("statsInterval").doubleValue();
             simtime_t nextFire = simTime() + statsInterval;
             simtime_t roundEnd = roundStartTime + roundTime;
@@ -189,119 +169,207 @@ void SensorNode::handleMessage(cMessage *msg)
             break;
         }
 
-        // ── Greedy-MSC Phase 3: local group assignment ────────────────────
+        // ════════════════ Greedy-MSC Phase 1: active node clustering ════════
+
+        // Each active node computes pheromone level → low phero fires first
+        // → creates cluster → invites active neighbours with similar avg dist.
+        case KIND_CLUSTER_SEED: {
+            delete msg; clusterSeedTimer = nullptr;
+            if (!useGreedyMSC || state != ON) break;
+            if (myClusterId >= 0) break;   // already joined a cluster
+
+            // Create new cluster with self as head
+            myClusterId = nodeId;
+
+            // Compute average distance to active neighbours within sensing range
+            myAvgActiveDist = 0;
+            int activeCount = 0;
+            for (auto &info : knownActiveInfo) {
+                double d = dist(posX, posY, info.x, info.y);
+                if (d <= rs) {
+                    myAvgActiveDist += d;
+                    activeCount++;
+                }
+            }
+            if (activeCount > 0) myAvgActiveDist /= activeCount;
+
+            broadcastClusterInvite();
+            EV_INFO << "[Node " << nodeId << "] created cluster " << myClusterId
+                    << " avgDist=" << myAvgActiveDist << "\n";
+            break;
+        }
+
+        // Phase 1 ends: active nodes that haven't joined any cluster become
+        // self-clusters.  All active nodes then broadcast their cluster ID.
+        case KIND_CLUSTER_DONE: {
+            delete msg; clusterDoneTimer = nullptr;
+            if (!useGreedyMSC) break;
+
+            if (state == ON) {
+                if (myClusterId < 0) {
+                    myClusterId = nodeId;   // self-cluster
+                    EV_INFO << "[Node " << nodeId
+                            << "] self-cluster (no group joined)\n";
+                }
+                broadcastClusterAnnounce();
+            }
+            break;
+        }
+
+        // ════════ Greedy-MSC Phase 2+3: sleep assignment + group ranking ════
+
         case KIND_GROUPING: {
             delete msg; groupingTimer = nullptr;
             if (!useGreedyMSC || state != OFF) break;
-            if (knownActiveInfo.empty()) break;
+            if (activeNodeClusterMap.empty()) break;
 
-            int    bestActiveId = -1;
-            double closestDist  = 1e9;
+            // ── Phase 2: determine which cluster this sleep node joins ──
+            // Count how many active neighbours belong to each cluster
+            std::map<int, int> clusterNeighCount;
             for (auto &info : knownActiveInfo) {
-                double d = dist(posX, posY, info.x, info.y);
-                if (d < closestDist) {
-                    closestDist = d;
-                    bestActiveId = info.id;
-                }
-            }
-            if (bestActiveId < 0) break;
-            assignedActiveNodeId = bestActiveId;
-
-            double activeX = 0, activeY = 0;
-            for (auto &info : knownActiveInfo) {
-                if (info.id == bestActiveId) {
-                    activeX = info.x;
-                    activeY = info.y;
-                    break;
-                }
+                auto it = activeNodeClusterMap.find(info.id);
+                if (it != activeNodeClusterMap.end())
+                    clusterNeighCount[it->second]++;
             }
 
-            double myDist = dist(posX, posY, activeX, activeY);
+            if (clusterNeighCount.empty()) break;
+
+            if (clusterNeighCount.size() == 1) {
+                // All active neighbours in one cluster → join it
+                myClusterId = clusterNeighCount.begin()->first;
+            } else {
+                // Multiple clusters → join the one with FEWER active
+                // neighbours nearby (that cluster needs more backup)
+                int bestCluster = -1;
+                int fewestActive = 1e9;
+                for (auto &kv : clusterNeighCount) {
+                    if (kv.second < fewestActive) {
+                        fewestActive = kv.second;
+                        bestCluster  = kv.first;
+                    }
+                }
+                myClusterId = bestCluster;
+            }
+
+            // ── Phase 3: Greedy-MSC group ranking within cluster ────────
+            // Find active nodes in my cluster
+            std::vector<ActiveNeighbourInfo> clusterTargets;
+            for (auto &info : knownActiveInfo) {
+                auto it = activeNodeClusterMap.find(info.id);
+                if (it != activeNodeClusterMap.end() && it->second == myClusterId)
+                    clusterTargets.push_back(info);
+            }
+            if (clusterTargets.empty()) break;
+
+            // Pick the nearest active node in my cluster as primary target
+            int    targetId  = -1;
+            double closestD  = 1e9;
+            double targetX   = 0, targetY = 0;
+            for (auto &t : clusterTargets) {
+                double d = dist(posX, posY, t.x, t.y);
+                if (d < closestD) {
+                    closestD = d;
+                    targetId = t.id;
+                    targetX  = t.x;
+                    targetY  = t.y;
+                }
+            }
+            assignedActiveNodeId = targetId;
+
+            // Rank among sleep neighbours in the same cluster targeting
+            // the same active node.  Closer distance = better rank = Group 1.
+            double myDist = closestD;
             int rank = 1;
 
             for (auto &kv : neighbours) {
-                int nid = kv.first;
+                int nid  = kv.first;
                 double nx = kv.second.x;
                 double ny = kv.second.y;
 
+                // Skip active nodes
                 bool isActive = false;
-                for (auto &info : knownActiveInfo) {
+                for (auto &info : knownActiveInfo)
                     if (info.id == nid) { isActive = true; break; }
-                }
                 if (isActive) continue;
 
-                double nDistToOurs = dist(nx, ny, activeX, activeY);
+                // Would this sleep neighbour also be in our cluster?
+                // Check: is its nearest cluster-active-node also our target?
+                // (Approximate: check if our target is the nearest active
+                // node in our cluster to this neighbour too)
+                double nDistToTarget = dist(nx, ny, targetX, targetY);
+
+                // Check if this neighbour would pick the same target
                 bool sameTarget = true;
-                for (auto &info : knownActiveInfo) {
-                    if (dist(nx, ny, info.x, info.y) < nDistToOurs - 1e-9) {
+                for (auto &t : clusterTargets) {
+                    if (dist(nx, ny, t.x, t.y) < nDistToTarget - 1e-9) {
                         sameTarget = false;
                         break;
                     }
                 }
                 if (!sameTarget) continue;
 
-                if (nDistToOurs < myDist - 1e-9 ||
-                    (std::fabs(nDistToOurs - myDist) < 1e-9 && nid < nodeId))
+                // Check if also in same cluster (neighbour must also see
+                // mainly this cluster's active nodes — approximate check)
+                // For simplicity, count it if it's targeting the same node
+                if (nDistToTarget < myDist - 1e-9 ||
+                    (std::fabs(nDistToTarget - myDist) < 1e-9 && nid < nodeId))
                 {
                     rank++;
                 }
             }
 
-            myGroupNumber = rank;
-            myGroupScore  = myDist;
+            myGroupInCluster = rank;
 
-            EV_INFO << "[Node " << nodeId << "] assigned Group " << myGroupNumber
-                    << " for active node " << assignedActiveNodeId
+            EV_INFO << "[Node " << nodeId << "] cluster=" << myClusterId
+                    << " Group " << myGroupInCluster
+                    << " for active " << assignedActiveNodeId
                     << " (dist=" << myDist << ")\n";
             break;
         }
 
-        // ── Active node low-battery warning (Greedy-MSC) ───────────────────
+        // ════════════════ Greedy-MSC Phase 4: wake-up chain ═════════════════
+
         case KIND_LOW_BATTERY: {
             delete msg; lowBatteryTimer = nullptr;
             if (state != ON) break;
 
-            double drainRate   = 4.0 / 100.0;
-            double currentE    = getCurrentEnergy();
-            double timeToZero  = currentE / drainRate;
-            double deathTime   = simTime().dbl() + timeToZero;
+            double drainRate  = 4.0 / 100.0;
+            double currentE   = getCurrentEnergy();
+            double timeToZero = currentE / drainRate;
+            double deathTime  = simTime().dbl() + timeToZero;
 
             int coveredId = (assignedActiveNodeId >= 0)
                             ? assignedActiveNodeId : nodeId;
 
-            EV_INFO << "[Node " << nodeId << "] LOW BATTERY warning"
-                    << " (covering active " << coveredId
-                    << ", death≈" << deathTime << "s)\n";
-            broadcastLowBatteryWarning(coveredId, deathTime);
+            EV_INFO << "[Node " << nodeId << "] LOW BATTERY (covering active "
+                    << coveredId << " cluster=" << myClusterId
+                    << " death≈" << deathTime << "s)\n";
+            broadcastLowBatteryWarning(coveredId, myClusterId, deathTime);
             break;
         }
 
-        // ── Replacement wake-up (Greedy-MSC) ───────────────────────────────
         case KIND_WAKEUP: {
             delete msg; wakeupTimer = nullptr;
             if (state != OFF) break;
 
-            EV_INFO << "[Node " << nodeId << "] waking up as Group "
-                    << myGroupNumber << " replacement for active node "
-                    << assignedActiveNodeId << "\n";
+            EV_INFO << "[Node " << nodeId << "] waking as Group "
+                    << myGroupInCluster << " cluster=" << myClusterId
+                    << " for active " << assignedActiveNodeId << "\n";
             turnOnAsReplacement();
             break;
         }
 
-        // ── Reselection: end of cascade window ─────────────────────────────
-        // Remaining UNDECIDED nodes go back to OFF after the reselection
-        // cascade has had Ts seconds to complete.
+        // ════════════════ Reselection ═══════════════════════════════════════
+
         case KIND_RESELECT_STEADY:
             delete msg; reselectSteadyTimer = nullptr;
             if (state == UNDECIDED) turnOff();
             break;
 
-        // ── Reselection: post-cascade perimeter pruning ────────────────────
         case KIND_RESELECT_REDUND: {
             delete msg; reselectRedundTimer = nullptr;
             if (state == ON && isPerimeterRedundant()) {
-                EV_INFO << "[Node " << nodeId
-                        << "] Reselection pruned: perimeter covered\n";
+                EV_INFO << "[Node " << nodeId << "] Reselection pruned\n";
                 turnOff();
             }
             break;
@@ -320,11 +388,14 @@ void SensorNode::handleMessage(cMessage *msg)
         }
 
     } else {
+        // ── Network messages ───────────────────────────────────────────────
         int kind = msg->getKind();
         if      (kind == 100) handlePowerOn(check_and_cast<PowerOnMsg*>(msg));
         else if (kind == 101) handleCoverageMark(check_and_cast<CoverageMarkMsg*>(msg));
         else if (kind == 103) handleLowBatteryWarning(check_and_cast<LowBatteryWarningMsg*>(msg));
         else if (kind == 104) handleReselectTrigger(check_and_cast<ReselectTriggerMsg*>(msg));
+        else if (kind == 105) handleClusterInvite(check_and_cast<ClusterInviteMsg*>(msg));
+        else if (kind == 106) handleClusterAnnounce(check_and_cast<ClusterAnnounceMsg*>(msg));
         else                  delete msg;
     }
 }
@@ -342,6 +413,8 @@ void SensorNode::startRound()
     cancelTimer(pruneTimer);
     cancelTimer(redundancyTimer);
     cancelTimer(refreshTimer);
+    cancelTimer(clusterSeedTimer);
+    cancelTimer(clusterDoneTimer);
     cancelTimer(groupingTimer);
     cancelTimer(lowBatteryTimer);
     cancelTimer(wakeupTimer);
@@ -358,14 +431,15 @@ void SensorNode::startRound()
     knownActive.clear();
 
     if (useGreedyMSC) {
-        myGroupNumber        = -1;
+        myClusterId         = -1;
+        myAvgActiveDist     = 0;
+        activeNodeClusterMap.clear();
+        myGroupInCluster    = -1;
         assignedActiveNodeId = -1;
-        myGroupScore         = 0;
         warningsReceived.clear();
         knownActiveInfo.clear();
     }
 
-    // Reset reselection state per round
     if (useReselection) {
         lastReselectTime = -1;
         reselectCount    = 0;
@@ -383,7 +457,7 @@ void SensorNode::startRound()
     volunteerTimer = new cMessage("vol", KIND_VOLUNTEER);
     scheduleAt(simTime() + vt, volunteerTimer);
 
-    // Steady timer: end of Phase 1
+    // Steady timer
     steadyTimer = new cMessage("steady", KIND_STEADY);
     scheduleAt(simTime() + Ts, steadyTimer);
 
@@ -395,26 +469,36 @@ void SensorNode::startRound()
     redundancyTimer = new cMessage("redcheck", KIND_REDUNDANCY_CHECK);
     scheduleAt(simTime() + Ts + Te + uniform(0, Te), redundancyTimer);
 
-    // Greedy-MSC Phase 3
+    // Greedy-MSC 4-phase scheduling:
+    //   Phase 1 (clustering)  starts at Ts+3Te, lasts Ts seconds
+    //   Phase 1 done          at Ts+3Te+Ts  → announce cluster IDs
+    //   Phase 2+3 (grouping)  at Ts+3Te+Ts+0.5s → sleep assign + Greedy-MSC
+    //   Stats report          at Ts+3Te+Ts+0.7s
     if (useGreedyMSC) {
-        simtime_t groupPhaseStart = simTime() + Ts + 3.0 * Te;
+        simtime_t p1Start = simTime() + Ts + 3.0 * Te;
+        clusterSeedTimer = new cMessage("cluster_seed", KIND_CLUSTER_SEED);
+        scheduleAt(p1Start, clusterSeedTimer);   // scheduled at same time for all;
+                                                  // actual timer set inside handler
+
+        clusterDoneTimer = new cMessage("cluster_done", KIND_CLUSTER_DONE);
+        scheduleAt(p1Start + Ts, clusterDoneTimer);
+
         groupingTimer = new cMessage("grouping", KIND_GROUPING);
-        scheduleAt(groupPhaseStart, groupingTimer);
+        scheduleAt(p1Start + Ts + 0.5, groupingTimer);
 
         statsTimer = new cMessage("stats", KIND_STATS);
-        scheduleAt(groupPhaseStart + 0.1, statsTimer);
+        scheduleAt(p1Start + Ts + 0.7, statsTimer);
     } else {
         statsTimer = new cMessage("stats", KIND_STATS);
         scheduleAt(simTime() + Ts + 3.0 * Te, statsTimer);
     }
 
-    // Refresh display
     refreshTimer = new cMessage("refresh", KIND_DISPLAY_REFRESH);
     scheduleAt(simTime() + Ts + 50.0, refreshTimer);
 }
 
 
-// ════════════════════════════════ OGDC + Stigmergy Phase 1 ═══════════════════
+// ════════════════════════════════ OGDC Phase 1 ═══════════════════════════════
 
 void SensorNode::handlePowerOn(PowerOnMsg *m)
 {
@@ -427,12 +511,11 @@ void SensorNode::handlePowerOn(PowerOnMsg *m)
     cancelTimer(volunteerTimer);
 
     double selectTime;
-    double myPredX   = m->senderX;
-    double myPredY   = m->senderY;
-    bool   myHasPred = true;
+    double myPredX = m->senderX, myPredY = m->senderY;
+    bool myHasPred = true;
 
     if (!m->hasPred) {
-        double dA  = dist(posX, posY, m->senderX, m->senderY);
+        double dA = dist(posX, posY, m->senderX, m->senderY);
         if (dA < 1e-6) { delete m; return; }
         double dev = std::fabs(dA - std::sqrt(3.0) * rs);
         selectTime = Td + (dev / rs) * Ts;
@@ -446,9 +529,6 @@ void SensorNode::handlePowerOn(PowerOnMsg *m)
 
     double cov = localCoverage(posX, posY);
     selectTime += cov * COVERAGE_BIAS * Ts;
-
-    EV_INFO << "[Node " << nodeId << "] pheromone="
-            << cov * 100.0 << "% selectTime=" << selectTime << "s\n";
 
     if (selectTime < bestTime) {
         bestTime    = selectTime;
@@ -476,27 +556,13 @@ void SensorNode::turnOn()
 
     markCoverage(posX, posY);
 
-    if (cascadeParentId >= 0) {
+    if (cascadeParentId >= 0)
         edgeWeight[cascadeParentId] += EDGE_REINFORCE;
-        EV_INFO << "[Node " << nodeId << "] reinforced edge from node "
-                << cascadeParentId
-                << " weight=" << edgeWeight[cascadeParentId] << "\n";
-    }
 
     broadcastPowerOn();
     broadcastCoverageMark();
 
-    // Greedy-MSC: schedule low-battery warning
-    if (useGreedyMSC) {
-        double fivePercent       = LOW_BATTERY_THRESH * initEnergy;
-        double drainRate         = 4.0 / 100.0;
-        double timeToWarning     = (phaseStartEnergy - fivePercent) / drainRate;
-        if (timeToWarning > 0) {
-            cancelTimer(lowBatteryTimer);
-            lowBatteryTimer = new cMessage("lowbat", KIND_LOW_BATTERY);
-            scheduleAt(simTime() + timeToWarning, lowBatteryTimer);
-        }
-    }
+    if (useGreedyMSC) scheduleLowBatteryWarning();
 }
 
 void SensorNode::turnOff()
@@ -510,37 +576,30 @@ void SensorNode::turnOff()
 void SensorNode::broadcastPowerOn()
 {
     double t1x=-1, t1y=-1, t2x=-1, t2y=-1;
-    if (hasPred)
-        computeTargets(predX, predY, posX, posY, t1x, t1y, t2x, t2y);
+    if (hasPred) computeTargets(predX, predY, posX, posY, t1x, t1y, t2x, t2y);
 
     PowerOnMsg tmpl;
     tmpl.senderId = nodeId;
-    tmpl.senderX  = posX;  tmpl.senderY = posY;
-    tmpl.hasPred  = hasPred;
-    tmpl.predX    = predX; tmpl.predY   = predY;
-    tmpl.predId   = (hasPred && cascadeParentId >= 0) ? cascadeParentId : -1;
-    tmpl.t1x = t1x; tmpl.t1y = t1y;
-    tmpl.t2x = t2x; tmpl.t2y = t2y;
+    tmpl.senderX = posX; tmpl.senderY = posY;
+    tmpl.hasPred = hasPred;
+    tmpl.predX = predX; tmpl.predY = predY;
+    tmpl.predId = (hasPred && cascadeParentId >= 0) ? cascadeParentId : -1;
+    tmpl.t1x = t1x; tmpl.t1y = t1y; tmpl.t2x = t2x; tmpl.t2y = t2y;
 
-    for (auto &kv : neighbours) {
-        cModule *mod = getParentModule()->getSubmodule("sensor", kv.first);
-        sendDirect(tmpl.dup(), mod, "radioIn");
-    }
+    for (auto &kv : neighbours)
+        sendDirect(tmpl.dup(), getParentModule()->getSubmodule("sensor", kv.first), "radioIn");
 }
 
 void SensorNode::broadcastCoverageMark()
 {
     CoverageMarkMsg tmpl;
-    tmpl.senderId        = nodeId;
-    tmpl.senderX         = posX;
-    tmpl.senderY         = posY;
-    tmpl.sensingRange    = rs;
+    tmpl.senderId = nodeId;
+    tmpl.senderX = posX; tmpl.senderY = posY;
+    tmpl.sensingRange = rs;
     tmpl.remainingEnergy = getCurrentEnergy();
 
-    for (auto &kv : neighbours) {
-        cModule *mod = getParentModule()->getSubmodule("sensor", kv.first);
-        sendDirect(tmpl.dup(), mod, "radioIn");
-    }
+    for (auto &kv : neighbours)
+        sendDirect(tmpl.dup(), getParentModule()->getSubmodule("sensor", kv.first), "radioIn");
 }
 
 void SensorNode::handleCoverageMark(CoverageMarkMsg *m)
@@ -548,55 +607,38 @@ void SensorNode::handleCoverageMark(CoverageMarkMsg *m)
     markCoverage(m->senderX, m->senderY, PHEROMONE_DEPOSIT);
 
     bool found = false;
-    for (auto &k : knownActive) {
+    for (auto &k : knownActive)
         if (std::fabs(k.first - m->senderX) < 1e-6 &&
             std::fabs(k.second - m->senderY) < 1e-6) { found = true; break; }
-    }
-    if (!found)
-        knownActive.push_back({m->senderX, m->senderY});
+    if (!found) knownActive.push_back({m->senderX, m->senderY});
 
     if (useGreedyMSC) {
         bool infoFound = false;
-        for (auto &info : knownActiveInfo) {
-            if (info.id == m->senderId) {
-                info.energy = m->remainingEnergy;
-                infoFound = true;
-                break;
-            }
-        }
+        for (auto &info : knownActiveInfo)
+            if (info.id == m->senderId) { info.energy = m->remainingEnergy; infoFound = true; break; }
         if (!infoFound)
-            knownActiveInfo.push_back(
-                {m->senderId, m->senderX, m->senderY, m->remainingEnergy});
+            knownActiveInfo.push_back({m->senderId, m->senderX, m->senderY, m->remainingEnergy});
     }
-
     delete m;
 }
 
 // ════════════════════════════════ Geometry ═══════════════════════════════════
 
-void SensorNode::computeTargets(double ax, double ay,
-                                 double bx, double by,
-                                 double &t1x, double &t1y,
-                                 double &t2x, double &t2y)
+void SensorNode::computeTargets(double ax, double ay, double bx, double by,
+                                 double &t1x, double &t1y, double &t2x, double &t2y)
 {
     t1x = t1y = t2x = t2y = -1;
     double dAB = dist(ax, ay, bx, by);
     if (dAB < 1e-6 || dAB > 2.0*rs) return;
-
     double mx = (ax+bx)*0.5, my = (ay+by)*0.5;
     double ux = (bx-ax)/dAB, uy = (by-ay)/dAB;
-    double px = -uy,          py =  ux;
-    double h  = std::sqrt(rs*rs - (dAB*0.5)*(dAB*0.5));
-
-    double o1x = mx + h*px, o1y = my + h*py;
-    double o2x = mx - h*px, o2y = my - h*py;
-
+    double px = -uy, py = ux;
+    double h = std::sqrt(rs*rs - (dAB*0.5)*(dAB*0.5));
+    double o1x = mx+h*px, o1y = my+h*py, o2x = mx-h*px, o2y = my-h*py;
     auto makeTarget = [&](double ox, double oy, double &tx, double &ty) {
-        double dx = ox - mx, dy = oy - my;
-        double len = std::sqrt(dx*dx + dy*dy);
+        double dx = ox-mx, dy = oy-my, len = std::sqrt(dx*dx+dy*dy);
         if (len < 1e-9) { tx = ty = -1; return; }
-        tx = ox + (dx/len)*rs;
-        ty = oy + (dy/len)*rs;
+        tx = ox + (dx/len)*rs; ty = oy + (dy/len)*rs;
     };
     makeTarget(o1x, o1y, t1x, t1y);
     makeTarget(o2x, o2y, t2x, t2y);
@@ -606,29 +648,25 @@ void SensorNode::computeTargets(double ax, double ay,
 
 void SensorNode::markCoverage(double cx, double cy, double deposit)
 {
-    for (int gx = 0; gx < gridRes; gx++) {
+    for (int gx = 0; gx < gridRes; gx++)
         for (int gy = 0; gy < gridRes; gy++) {
-            double ccx = (gx + 0.5) * cellSize;
-            double ccy = (gy + 0.5) * cellSize;
+            double ccx = (gx+0.5)*cellSize, ccy = (gy+0.5)*cellSize;
             if (dist(ccx, ccy, cx, cy) <= rs)
                 stigGrid[gx][gy] = std::min(1.0, stigGrid[gx][gy] + deposit);
         }
-    }
 }
 
 double SensorNode::localCoverage(double cx, double cy) const
 {
     int total = 0, marked = 0;
-    for (int gx = 0; gx < gridRes; gx++) {
+    for (int gx = 0; gx < gridRes; gx++)
         for (int gy = 0; gy < gridRes; gy++) {
-            double ccx = (gx + 0.5) * cellSize;
-            double ccy = (gy + 0.5) * cellSize;
+            double ccx = (gx+0.5)*cellSize, ccy = (gy+0.5)*cellSize;
             if (dist(ccx, ccy, cx, cy) <= rs) {
                 total++;
                 if (stigGrid[gx][gy] >= PHEROMONE_SENSE_THRESH) marked++;
             }
         }
-    }
     return (total > 0) ? (double)marked / total : 0.0;
 }
 
@@ -641,13 +679,9 @@ void SensorNode::decayAndPruneEdges()
     std::vector<int> toPrune;
     for (auto &kv : edgeWeight) {
         kv.second *= EDGE_DECAY;
-        if (kv.second < EDGE_PRUNE_THRESH)
-            toPrune.push_back(kv.first);
+        if (kv.second < EDGE_PRUNE_THRESH) toPrune.push_back(kv.first);
     }
-    for (int id : toPrune) {
-        EV_INFO << "[Node " << nodeId << "] pruned edge to node " << id << "\n";
-        edgeWeight.erase(id);
-    }
+    for (int id : toPrune) edgeWeight.erase(id);
 }
 
 // ════════════════════════════════ Stigmergy Phase 2 ══════════════════════════
@@ -656,79 +690,163 @@ bool SensorNode::isPerimeterRedundant() const
 {
     cModule *parent = getParentModule();
     int n = parent->par("numSensors");
-
     std::vector<std::pair<double,double>> liveActive;
     for (int i = 0; i < n; i++) {
         if (i == nodeId) continue;
-        SensorNode *s = check_and_cast<SensorNode*>(
-                            parent->getSubmodule("sensor", i));
-        // Only count truly alive ON nodes — dead ON nodes must be excluded
+        SensorNode *s = check_and_cast<SensorNode*>(parent->getSubmodule("sensor", i));
         if (s->state == ON && s->getCurrentEnergy() > LOW_BATTERY_THRESH * s->initEnergy)
             liveActive.push_back({s->posX, s->posY});
     }
     if (liveActive.empty()) return false;
-
     const double TWO_PI = 2.0 * M_PI;
     for (int i = 0; i < PERIM_SAMPLES; i++) {
         double angle = TWO_PI * i / PERIM_SAMPLES;
-        double px = posX + rs * std::cos(angle);
-        double py = posY + rs * std::sin(angle);
-
-        px = std::max(0.0, std::min(areaSize, px));
-        py = std::max(0.0, std::min(areaSize, py));
-
+        double px = std::max(0.0, std::min(areaSize, posX + rs*std::cos(angle)));
+        double py = std::max(0.0, std::min(areaSize, posY + rs*std::sin(angle)));
         bool covered = false;
-        for (auto &a : liveActive) {
-            if (dist(px, py, a.first, a.second) <= rs) {
-                covered = true;
-                break;
-            }
-        }
+        for (auto &a : liveActive)
+            if (dist(px, py, a.first, a.second) <= rs) { covered = true; break; }
         if (!covered) return false;
     }
     return true;
 }
 
-// ════════════════════════════════ Greedy-MSC Phase 3 ═════════════════════════
+// ════════════════════════════════ Greedy-MSC Phase 1: Clustering ═════════════
 
-void SensorNode::broadcastLowBatteryWarning(int coveredId, double deathTime)
+void SensorNode::broadcastClusterInvite()
+{
+    ClusterInviteMsg tmpl;
+    tmpl.senderId      = nodeId;
+    tmpl.clusterHeadId = myClusterId;
+    tmpl.avgDist       = myAvgActiveDist;
+
+    // Send only to active neighbours (within rc)
+    for (auto &kv : neighbours) {
+        // Check if this neighbour is active
+        bool isActive = false;
+        for (auto &info : knownActiveInfo)
+            if (info.id == kv.first) { isActive = true; break; }
+        if (isActive)
+            sendDirect(tmpl.dup(), getParentModule()->getSubmodule("sensor", kv.first), "radioIn");
+    }
+}
+
+void SensorNode::handleClusterInvite(ClusterInviteMsg *m)
+{
+    if (!useGreedyMSC || state != ON) { delete m; return; }
+    if (myClusterId >= 0) { delete m; return; }   // already in a cluster
+
+    // Compute my own avg distance to active neighbours within sensing range
+    double myAvg = 0;
+    int cnt = 0;
+    for (auto &info : knownActiveInfo) {
+        double d = dist(posX, posY, info.x, info.y);
+        if (d <= rs) { myAvg += d; cnt++; }
+    }
+    if (cnt > 0) myAvg /= cnt;
+    myAvgActiveDist = myAvg;
+
+    // Check distance similarity
+    double maxD = std::max(myAvg, m->avgDist);
+    double diff = (maxD > 1e-9) ? std::fabs(myAvg - m->avgDist) / maxD : 0;
+
+    if (diff <= clusterDistThreshold) {
+        // Join this cluster
+        myClusterId = m->clusterHeadId;
+        cancelTimer(clusterSeedTimer);   // don't create own cluster
+
+        EV_INFO << "[Node " << nodeId << "] joined cluster " << myClusterId
+                << " (myAvg=" << myAvg << " inviterAvg=" << m->avgDist
+                << " diff=" << diff*100.0 << "%)\n";
+
+        // Cascade: invite my own active neighbours
+        broadcastClusterInvite();
+    }
+    // else: ignore, will create own cluster when seed timer fires or at CLUSTER_DONE
+
+    delete m;
+}
+
+void SensorNode::broadcastClusterAnnounce()
+{
+    ClusterAnnounceMsg tmpl;
+    tmpl.senderId  = nodeId;
+    tmpl.clusterId = myClusterId;
+
+    // Broadcast to ALL neighbours (active + sleep)
+    for (auto &kv : neighbours)
+        sendDirect(tmpl.dup(), getParentModule()->getSubmodule("sensor", kv.first), "radioIn");
+}
+
+void SensorNode::handleClusterAnnounce(ClusterAnnounceMsg *m)
+{
+    if (useGreedyMSC)
+        activeNodeClusterMap[m->senderId] = m->clusterId;
+    delete m;
+}
+
+// ════════════════════════════════ Greedy-MSC Phase 4: Wake-up ════════════════
+
+void SensorNode::scheduleLowBatteryWarning()
+{
+    double drainRate = 4.0 / 100.0;
+    double warnEnergy;
+
+    if (greedyW >= 1.0) {
+        // w=1: warn at 5% of initial energy (run until nearly dead)
+        warnEnergy = LOW_BATTERY_THRESH * initEnergy;
+    } else {
+        // w<1: warn when (1-w) fraction of current energy remains
+        // e.g. w=0.5 → warn at 50% of start energy → hand over at half-life
+        warnEnergy = phaseStartEnergy * (1.0 - greedyW);
+    }
+
+    double timeToWarning = (phaseStartEnergy - warnEnergy) / drainRate;
+    if (timeToWarning > 0) {
+        cancelTimer(lowBatteryTimer);
+        lowBatteryTimer = new cMessage("lowbat", KIND_LOW_BATTERY);
+        scheduleAt(simTime() + timeToWarning, lowBatteryTimer);
+    }
+}
+
+void SensorNode::broadcastLowBatteryWarning(int coveredId, int clustId, double deathTime)
 {
     LowBatteryWarningMsg tmpl;
-    tmpl.senderId           = nodeId;
-    tmpl.senderX            = posX;
-    tmpl.senderY            = posY;
-    tmpl.coveredActiveId    = coveredId;
+    tmpl.senderId = nodeId;
+    tmpl.senderX = posX; tmpl.senderY = posY;
+    tmpl.coveredActiveId = coveredId;
+    tmpl.clusterId = clustId;
     tmpl.estimatedDeathTime = deathTime;
 
-    for (auto &kv : neighbours) {
-        cModule *mod = getParentModule()->getSubmodule("sensor", kv.first);
-        sendDirect(tmpl.dup(), mod, "radioIn");
-    }
+    for (auto &kv : neighbours)
+        sendDirect(tmpl.dup(), getParentModule()->getSubmodule("sensor", kv.first), "radioIn");
 }
 
 void SensorNode::handleLowBatteryWarning(LowBatteryWarningMsg *m)
 {
-    if (!useGreedyMSC || state != OFF || myGroupNumber < 1) { delete m; return; }
+    if (!useGreedyMSC || state != OFF || myGroupInCluster < 1) { delete m; return; }
+
+    // Only respond to warnings from my own cluster
+    if (m->clusterId != myClusterId) { delete m; return; }
 
     warningsReceived[m->coveredActiveId]++;
     int warnCount = warningsReceived[m->coveredActiveId];
 
     if (assignedActiveNodeId == m->coveredActiveId &&
-        myGroupNumber == warnCount)
+        myGroupInCluster == warnCount)
     {
         double wakeupTime = m->estimatedDeathTime - WAKEUP_BUFFER;
-        if (wakeupTime <= simTime().dbl())
-            wakeupTime = simTime().dbl() + 0.1;
+        if (wakeupTime <= simTime().dbl()) wakeupTime = simTime().dbl() + 0.1;
 
         cancelTimer(wakeupTimer);
         wakeupTimer = new cMessage("wakeup", KIND_WAKEUP);
         scheduleAt(wakeupTime, wakeupTimer);
 
-        EV_INFO << "[Node " << nodeId << "] Group " << myGroupNumber
-                << " scheduling wake-up at t=" << wakeupTime
-                << " for active node " << assignedActiveNodeId << "\n";
+        EV_INFO << "[Node " << nodeId << "] Group " << myGroupInCluster
+                << " cluster=" << myClusterId
+                << " wake at t=" << wakeupTime
+                << " for active " << assignedActiveNodeId << "\n";
     }
-
     delete m;
 }
 
@@ -744,73 +862,42 @@ void SensorNode::turnOnAsReplacement()
     markCoverage(posX, posY);
     broadcastCoverageMark();
 
-    if (useGreedyMSC) {
-        double fivePercent       = LOW_BATTERY_THRESH * initEnergy;
-        double drainRate         = 4.0 / 100.0;
-        double timeToWarning     = (phaseStartEnergy - fivePercent) / drainRate;
-        if (timeToWarning > 0) {
-            cancelTimer(lowBatteryTimer);
-            lowBatteryTimer = new cMessage("lowbat", KIND_LOW_BATTERY);
-            scheduleAt(simTime() + timeToWarning, lowBatteryTimer);
-        }
-    }
+    if (useGreedyMSC) scheduleLowBatteryWarning();
 }
 
 // ════════════════════════════════ Reselection ════════════════════════════════
 
-// Called by the coordinator node when coverage drops below threshold.
-// Sends ReselectTriggerMsg directly to ALL nodes in the network.
 void SensorNode::triggerReselection()
 {
     reselectCount++;
     lastReselectTime = simTime();
 
-    EV_INFO << "\n╔══════════════════════════════════════════════════╗\n"
-            << "║  RESELECTION #" << reselectCount
-            << " triggered at t=" << simTime() << "s\n"
-            << "╚══════════════════════════════════════════════════╝\n\n";
-
     std::cout << "\n>>> RESELECTION #" << reselectCount
               << " triggered at t=" << simTime() << "s <<<\n" << std::endl;
 
-    // Send trigger to every node in the network
     cModule *parent = getParentModule();
     int n = parent->par("numSensors");
     for (int i = 0; i < n; i++) {
-        cModule *mod = parent->getSubmodule("sensor", i);
         ReselectTriggerMsg *trigger = new ReselectTriggerMsg("RESELECT");
         trigger->senderId = nodeId;
-        sendDirect(trigger, mod, "radioIn");
+        sendDirect(trigger, parent->getSubmodule("sensor", i), "radioIn");
     }
 }
 
-// Each node receiving the reselection trigger:
-//   - OFF nodes with sufficient energy → become UNDECIDED, start cascade
-//   - ON nodes → stay ON (still alive, keep covering)
-//   - Dead nodes → ignore
 void SensorNode::handleReselectTrigger(ReselectTriggerMsg *m)
 {
     delete m;
     if (!useReselection) return;
-
-    // Only OFF nodes with sufficient energy participate
     if (state != OFF) return;
     if (getCurrentEnergy() <= LOW_BATTERY_THRESH * initEnergy) return;
 
-    // Become UNDECIDED — ready for a new cascade
-    state   = UNDECIDED;
+    state = UNDECIDED;
     hasPred = false;
-    bestTime    = 1e9;
-    bestHasPred = false;
-    bestPredId  = -1;
+    bestTime = 1e9; bestHasPred = false; bestPredId = -1;
     cascadeParentId = -1;
 
-    // Reset pheromone grid — old deposits represent dead nodes' coverage
-    // areas and would penalize select timers, pushing them past the Ts
-    // deadline and preventing selection.
     stigGrid.assign(gridRes, std::vector<double>(gridRes, 0.0));
 
-    // Schedule volunteer timer (energy-weighted, same as startRound)
     double lostFrac = 1.0 - getCurrentEnergy() / initEnergy;
     lostFrac = std::max(0.0, std::min(lostFrac, 0.9));
     double vt = exponential(0.05 + lostFrac * 0.40);
@@ -819,17 +906,14 @@ void SensorNode::handleReselectTrigger(ReselectTriggerMsg *m)
     volunteerTimer = new cMessage("vol", KIND_VOLUNTEER);
     scheduleAt(simTime() + vt, volunteerTimer);
 
-    // Schedule steady timer: UNDECIDED → OFF after Ts
     cancelTimer(reselectSteadyTimer);
     reselectSteadyTimer = new cMessage("resel_steady", KIND_RESELECT_STEADY);
     scheduleAt(simTime() + Ts, reselectSteadyTimer);
 
-    // Schedule perimeter pruning after cascade settles
     cancelTimer(reselectRedundTimer);
     reselectRedundTimer = new cMessage("resel_redund", KIND_RESELECT_REDUND);
     scheduleAt(simTime() + Ts + Te + uniform(0, Te), reselectRedundTimer);
 
-    EV_INFO << "[Node " << nodeId << "] re-entering UNDECIDED for reselection\n";
     updateDisplay();
 }
 
@@ -850,55 +934,48 @@ void SensorNode::computeCoverage(bool printReport)
     std::vector<std::pair<double,double>> active;
     int onCount = 0, offCount = 0, deadCount = 0;
     double sumEnergy = 0.0, maxEnergy = 0.0, minEnergy = 1e9;
-    int    maxNode = -1, minNode = -1, avgNode = -1;
+    int maxNode = -1, minNode = -1, avgNode = -1;
     double avgDiff = 1e9;
 
-    std::map<int,int> groupCounts;
-    int ungroupedSleep = 0;
+    // Cluster + group stats
+    std::map<int, int> clusterSizes;
+    std::map<int, std::map<int,int>> clusterGroupCounts;
 
     for (int i = 0; i < n; i++) {
-        SensorNode *s = check_and_cast<SensorNode*>(
-                            parent->getSubmodule("sensor", i));
+        SensorNode *s = check_and_cast<SensorNode*>(parent->getSubmodule("sensor", i));
         double liveE = s->getCurrentEnergy();
         sumEnergy += liveE;
         if (liveE > maxEnergy) { maxEnergy = liveE; maxNode = i; }
         if (liveE < minEnergy) { minEnergy = liveE; minNode = i; }
-        if (s->getCurrentEnergy() <= LOW_BATTERY_THRESH * s->initEnergy) {
+        if (liveE <= LOW_BATTERY_THRESH * s->initEnergy) {
             deadCount++;
         } else if (s->state == ON) {
-            active.push_back({s->posX, s->posY});
-            onCount++;
+            active.push_back({s->posX, s->posY}); onCount++;
         } else if (s->state == OFF) {
             offCount++;
         }
 
-        if (useGreedyMSC && s->state == OFF &&
-            s->getCurrentEnergy() > LOW_BATTERY_THRESH * s->initEnergy)
-        {
-            if (s->myGroupNumber > 0)
-                groupCounts[s->myGroupNumber]++;
-            else
-                ungroupedSleep++;
+        if (useGreedyMSC && s->myClusterId >= 0) {
+            clusterSizes[s->myClusterId]++;
+            if (s->state == OFF && s->myGroupInCluster > 0 &&
+                liveE > LOW_BATTERY_THRESH * s->initEnergy)
+                clusterGroupCounts[s->myClusterId][s->myGroupInCluster]++;
         }
     }
 
-    const int    cellsPerMeter = 5;
-    const int    G             = (int)(areaSize * cellsPerMeter);
-    const double cs            = 1.0 / cellsPerMeter;
+    const int G = (int)(areaSize * 5);
+    const double cs = 0.2;
     int covered = 0;
-    for (int gx = 0; gx < G; gx++) {
+    for (int gx = 0; gx < G; gx++)
         for (int gy = 0; gy < G; gy++) {
-            double cx = (gx + 0.5) * cs, cy = (gy + 0.5) * cs;
-            for (auto &p : active) {
+            double cx = (gx+0.5)*cs, cy = (gy+0.5)*cs;
+            for (auto &p : active)
                 if (dist(p.first, p.second, cx, cy) <= rs) { covered++; break; }
-            }
         }
-    }
 
     double avgEnergy = sumEnergy / n;
     for (int i = 0; i < n; i++) {
-        SensorNode *s = check_and_cast<SensorNode*>(
-                            parent->getSubmodule("sensor", i));
+        SensorNode *s = check_and_cast<SensorNode*>(parent->getSubmodule("sensor", i));
         double diff = std::fabs(s->getCurrentEnergy() - avgEnergy);
         if (diff < avgDiff) { avgDiff = diff; avgNode = i; }
     }
@@ -907,109 +984,86 @@ void SensorNode::computeCoverage(bool printReport)
 
     if (printReport) {
         EV_INFO << "\n+---------- ROUND " << roundCount << " REPORT ----------+\n"
-                << " Coordinator  : Node " << nodeId         << "\n"
-                << " Active (ON)  : " << onCount             << "\n"
-                << " Sleeping(OFF): " << offCount            << "\n"
-                << " Dead/Low bat : " << deadCount           << "\n"
-                << " Grid         : " << G << "x" << G
-                                      << " (" << cs << "m)\n"
-                << " Avg energy   : " << avgEnergy << " (Node " << avgNode << ")\n"
-                << " Max energy   : " << maxEnergy << " (Node " << maxNode << ")\n"
-                << " Min energy   : " << minEnergy << " (Node " << minNode << ")\n"
-                << " Coverage     : " << cov * 100.0         << "%\n"
-                << " Sim time     : " << simTime()           << "s\n";
+                << " Active (ON)  : " << onCount   << "\n"
+                << " Sleeping(OFF): " << offCount  << "\n"
+                << " Dead/Low bat : " << deadCount << "\n"
+                << " Avg energy   : " << avgEnergy << "\n"
+                << " Coverage     : " << cov*100.0 << "%\n"
+                << " Sim time     : " << simTime() << "s\n";
         if (useReselection) {
             EV_INFO << " Reselections : " << reselectCount;
             if (reselectGaveUp) EV_INFO << " (gave up)";
             EV_INFO << "\n";
         }
         if (useGreedyMSC) {
-            EV_INFO << " Greedy-MSC   : ON\n";
-            for (auto &gc : groupCounts)
-                EV_INFO << "   Group " << gc.first << "    : " << gc.second << " nodes\n";
-            EV_INFO << "   Ungrouped  : " << ungroupedSleep << " nodes\n";
+            EV_INFO << " Greedy-MSC   : ON  w=" << greedyW << "\n"
+                    << " Clusters     : " << clusterSizes.size() << "\n";
+            for (auto &cs : clusterSizes) {
+                EV_INFO << "   Cluster " << cs.first << " (" << cs.second << " nodes)";
+                auto git = clusterGroupCounts.find(cs.first);
+                if (git != clusterGroupCounts.end())
+                    for (auto &g : git->second)
+                        EV_INFO << "  G" << g.first << "=" << g.second;
+                EV_INFO << "\n";
+            }
         }
         EV_INFO << "+--------------------------------------+\n\n";
 
         std::cout << "\n+---------- ROUND " << roundCount << " REPORT ----------+\n" << std::endl;
-        std::cout << " Round        : " << roundCount             << std::endl;
-        std::cout << " Coordinator  : Node " << nodeId            << std::endl;
-        std::cout << " Active (ON)  : " << onCount                << std::endl;
-        std::cout << " Sleeping(OFF): " << offCount               << std::endl;
-        std::cout << " Dead/Low bat : " << deadCount              << std::endl;
-        std::cout << " Grid         : " << G << "x" << G
-                  << " (" << cs << "m)"                           << std::endl;
-        std::cout << " Avg energy   : " << avgEnergy << " (Node " << avgNode << ")" << std::endl;
-        std::cout << " Max energy   : " << maxEnergy << " (Node " << maxNode << ")" << std::endl;
-        std::cout << " Min energy   : " << minEnergy << " (Node " << minNode << ")" << std::endl;
-        std::cout << " Coverage     : " << cov * 100.0 << "%"     << std::endl;
-        std::cout << " Sim time     : " << simTime() << "s"       << std::endl;
+        std::cout << " Active (ON)  : " << onCount   << std::endl;
+        std::cout << " Sleeping(OFF): " << offCount  << std::endl;
+        std::cout << " Dead/Low bat : " << deadCount << std::endl;
+        std::cout << " Avg energy   : " << avgEnergy << std::endl;
+        std::cout << " Coverage     : " << cov*100.0 << "%" << std::endl;
+        std::cout << " Sim time     : " << simTime() << "s" << std::endl;
         if (useReselection) {
             std::cout << " Reselections : " << reselectCount;
             if (reselectGaveUp) std::cout << " (gave up)";
             std::cout << std::endl;
         }
         if (useGreedyMSC) {
-            std::cout << " Greedy-MSC   : ON"                     << std::endl;
-            for (auto &gc : groupCounts)
-                std::cout << "   Group " << gc.first << "    : " << gc.second << " nodes" << std::endl;
-            std::cout << "   Ungrouped  : " << ungroupedSleep << " nodes" << std::endl;
+            std::cout << " Greedy-MSC   : ON  w=" << greedyW << std::endl;
+            std::cout << " Clusters     : " << clusterSizes.size() << std::endl;
+            for (auto &cs : clusterSizes) {
+                std::cout << "   Cluster " << cs.first << " (" << cs.second << " nodes)";
+                auto git = clusterGroupCounts.find(cs.first);
+                if (git != clusterGroupCounts.end())
+                    for (auto &g : git->second)
+                        std::cout << "  G" << g.first << "=" << g.second;
+                std::cout << std::endl;
+            }
         }
-        std::cout << "+--------------------------------------+\n\n" << std::endl;
+        std::cout << "+--------------------------------------+\n" << std::endl;
         std::cout.flush();
     }
 
     emit(sigCoverage, cov);
-    emit(sigActive,   (double)onCount);
+    emit(sigActive, (double)onCount);
 
-    // ── Reselection trigger check ─────────────────────────────────────────
+    // Reselection trigger
     if (useReselection && !reselectGaveUp && cov < coverageThreshold) {
-        // Dynamic cooldown: cascade needs Ts + 3Te to settle, plus at least
-        // 2 stats intervals to verify coverage is stable.
         double statsInterval = par("statsInterval").doubleValue();
-        double cooldown = std::max(RESELECT_COOLDOWN_BASE,
-                                   Ts + 3.0 * Te + 2.0 * statsInterval);
-
+        double cooldown = std::max(RESELECT_COOLDOWN_BASE, Ts + 3.0*Te + 2.0*statsInterval);
         bool cooldownPassed = (lastReselectTime < 0 ||
                                (simTime() - lastReselectTime).dbl() > cooldown);
-
         if (cooldownPassed && offCount > 0) {
-            // If we already did a reselection and coverage STILL hasn't
-            // recovered above threshold after the cooldown, the network
-            // can no longer sustain the target coverage — stop trying.
             if (reselectCount > 0 && covAfterReselect >= 0 &&
-                covAfterReselect < coverageThreshold)
-            {
+                covAfterReselect < coverageThreshold) {
                 reselectGaveUp = true;
-                EV_INFO << "[Node " << nodeId
-                        << "] Reselection gave up: coverage="
-                        << covAfterReselect * 100.0
-                        << "% after last reselect, threshold="
-                        << coverageThreshold * 100.0 << "%\n";
-                std::cout << "\n>>> RESELECTION gave up after "
-                          << reselectCount << " attempts — not enough nodes"
-                          << " to sustain " << coverageThreshold * 100.0
-                          << "% coverage <<<\n" << std::endl;
+                std::cout << "\n>>> RESELECTION gave up after " << reselectCount
+                          << " attempts <<<\n" << std::endl;
                 return;
             }
-
-            // Safety limit
             if (reselectCount >= maxReselections) {
                 reselectGaveUp = true;
-                std::cout << "\n>>> RESELECTION limit reached ("
-                          << maxReselections << ") <<<\n" << std::endl;
+                std::cout << "\n>>> RESELECTION limit (" << maxReselections
+                          << ") <<<\n" << std::endl;
                 return;
             }
-
-            // Record current coverage as the "post-settle" measurement
-            // for the PREVIOUS reselection (if any), then trigger a new one.
             covAfterReselect = cov;
             triggerReselection();
         }
-    }
-    // If coverage is above threshold after a reselection, record it as
-    // successful so we know the next drop is a fresh event.
-    else if (useReselection && cov >= coverageThreshold && reselectCount > 0) {
+    } else if (useReselection && cov >= coverageThreshold && reselectCount > 0) {
         covAfterReselect = cov;
     }
 }
@@ -1017,26 +1071,17 @@ void SensorNode::computeCoverage(bool printReport)
 void SensorNode::updateDisplay()
 {
     if (!hasGUI()) return;
-    const double SCALE = 10.0;
+    const double S = 10.0;
     char buf[256];
-    if (getCurrentEnergy() <= LOW_BATTERY_THRESH * initEnergy) {
-        std::snprintf(buf, sizeof(buf),
-            "p=%.0f,%.0f;b=10,10,oval,#000000,#000000,1",
-            posX * SCALE, posY * SCALE);
-    } else if (state == ON) {
-        std::snprintf(buf, sizeof(buf),
-                "p=%.0f,%.0f;b=10,10,oval,#00cc00,#006600,1;r=%.0f,#00cc00",
-                posX * SCALE, posY * SCALE,
-                rs * SCALE);
-    } else if (state == OFF) {
-        std::snprintf(buf, sizeof(buf),
-            "p=%.0f,%.0f;b=8,8,oval,#cc0000,black,1",
-            posX * SCALE, posY * SCALE);
-    } else {
-        std::snprintf(buf, sizeof(buf),
-            "p=%.0f,%.0f;b=8,8,oval,#aaaaaa,black,1",
-            posX * SCALE, posY * SCALE);
-    }
+    if (getCurrentEnergy() <= LOW_BATTERY_THRESH * initEnergy)
+        std::snprintf(buf, sizeof(buf), "p=%.0f,%.0f;b=10,10,oval,#000000,#000000,1", posX*S, posY*S);
+    else if (state == ON)
+        std::snprintf(buf, sizeof(buf), "p=%.0f,%.0f;b=10,10,oval,#00cc00,#006600,1;r=%.0f,#00cc00",
+                      posX*S, posY*S, rs*S);
+    else if (state == OFF)
+        std::snprintf(buf, sizeof(buf), "p=%.0f,%.0f;b=8,8,oval,#cc0000,black,1", posX*S, posY*S);
+    else
+        std::snprintf(buf, sizeof(buf), "p=%.0f,%.0f;b=8,8,oval,#aaaaaa,black,1", posX*S, posY*S);
     getDisplayString().parse(buf);
 }
 
@@ -1046,8 +1091,7 @@ void SensorNode::finish()
     int n = par->par("numSensors");
     int minAlive = -1;
     for (int i = 0; i < n; i++) {
-        SensorNode *s = check_and_cast<SensorNode*>(
-                            par->getSubmodule("sensor", i));
+        SensorNode *s = check_and_cast<SensorNode*>(par->getSubmodule("sensor", i));
         if (s->getCurrentEnergy() > 0.0) { minAlive = i; break; }
     }
     if (nodeId == minAlive) {
