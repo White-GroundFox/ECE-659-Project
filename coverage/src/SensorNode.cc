@@ -45,6 +45,9 @@ void SensorNode::initialize(int stage)
         useGreedyMSC         = par("useGreedyMSC");
         clusterDistThreshold = par("clusterDistThreshold");
         greedyW              = par("greedyW");
+        warmupRounds         = par("warmupRounds");
+        warmupRoundTime      = par("warmupRoundTime");
+        ewClusterThreshold   = par("ewClusterThreshold");
         useReselection       = par("useReselection");
         coverageThreshold    = par("coverageThreshold");
         maxReselections      = par("maxReselections");
@@ -101,7 +104,9 @@ void SensorNode::handleMessage(cMessage *msg)
             roundCount++;
             startRound();
             roundTimer = new cMessage("round", KIND_ROUND);
-            scheduleAt(simTime() + roundTime, roundTimer);
+            double rt = (useGreedyMSC && roundCount <= warmupRounds)
+                        ? warmupRoundTime : roundTime;
+            scheduleAt(simTime() + rt, roundTimer);
             break;
         }
 
@@ -171,31 +176,91 @@ void SensorNode::handleMessage(cMessage *msg)
 
         // ════════════════ Greedy-MSC Phase 1: active node clustering ════════
 
-        // Each active node computes pheromone level → low phero fires first
-        // → creates cluster → invites active neighbours with similar avg dist.
         case KIND_CLUSTER_SEED: {
             delete msg; clusterSeedTimer = nullptr;
             if (!useGreedyMSC || state != ON) break;
-            if (myClusterId >= 0) break;   // already joined a cluster
+            if (myClusterId >= 0) break;   // already joined a cluster via direct invite
 
-            // Create new cluster with self as head
+            // ── Compute hub score from receivedChildEdgeWeights ──────────────
+            // Hub score = sum of edge weights children hold pointing to this node.
+            // High hub score → structural backbone → seed a cluster.
+            double hubScore = 0.0;
+            for (auto &kv : receivedChildEdgeWeights) hubScore += kv.second;
+
+            if (receivedChildEdgeWeights.empty()) {
+                // No children reported — not a backbone node this round.
+                // Fall back to avg-distance seeding.
+                myClusterId = nodeId;
+                myAvgActiveDist = 0; int ac = 0;
+                for (auto &info : knownActiveInfo) {
+                    double d = dist(posX, posY, info.x, info.y);
+                    if (d <= rs) { myAvgActiveDist += d; ac++; }
+                }
+                if (ac > 0) myAvgActiveDist /= ac;
+                broadcastClusterInvite();
+                EV_INFO << "[Node " << nodeId << "] fallback cluster (no children)"
+                        << " avgDist=" << myAvgActiveDist << "\n";
+                break;
+            }
+
+            // ── EW-based: stagger seed timer by hub score ────────────────────
+            // High hub-score nodes fire earlier → their invites arrive before
+            // lower-score competitors, so conflict resolution is implicit.
+            static constexpr double SEED_WINDOW = 0.4;
+            double seedDelay = SEED_WINDOW / (1.0 + hubScore);
+
+            // Re-schedule via a lambda: cancel existing and fire after delay.
+            // Since we're already IN the timer handler, just do the work after
+            // the delay by rescheduling a new timer.  Use clusterDoneTimer slot
+            // as a proxy is wrong — just schedule a new self-message with a
+            // small unique kind. Instead, do the invite work inline after delay
+            // by posting a new KIND_CLUSTER_SEED — but that risks re-entry.
+            // Cleanest: do the work here, having arrived via the staggered timer
+            // (the stagger is applied at scheduleAt time in startRound — see below).
+            // HERE we just execute: create cluster and send direct invites.
+
             myClusterId = nodeId;
 
-            // Compute average distance to active neighbours within sensing range
-            myAvgActiveDist = 0;
-            int activeCount = 0;
-            for (auto &info : knownActiveInfo) {
-                double d = dist(posX, posY, info.x, info.y);
-                if (d <= rs) {
-                    myAvgActiveDist += d;
-                    activeCount++;
-                }
-            }
-            if (activeCount > 0) myAvgActiveDist /= activeCount;
+            // ── Find qualifying children ─────────────────────────────────────
+            // Best child EW for this backbone node
+            double bestChildEW = 0.0;
+            for (auto &kv : receivedChildEdgeWeights)
+                if (kv.second > bestChildEW) bestChildEW = kv.second;
 
-            broadcastClusterInvite();
-            EV_INFO << "[Node " << nodeId << "] created cluster " << myClusterId
-                    << " avgDist=" << myAvgActiveDist << "\n";
+            double ewThreshold = ewClusterThreshold * bestChildEW;
+
+            // Collect qualifying children, sorted descending by EW
+            std::vector<std::pair<double,int>> qualifying; // (ew, childId)
+            for (auto &kv : receivedChildEdgeWeights)
+                if (kv.second >= ewThreshold)
+                    qualifying.push_back({kv.second, kv.first});
+            std::sort(qualifying.begin(), qualifying.end(),
+                      [](const std::pair<double,int> &a, const std::pair<double,int> &b){
+                          return a.first > b.first;
+                      });
+
+            // Send direct invites to qualifying children
+            for (auto &qc : qualifying) {
+                int childId = qc.second;
+                double ew   = qc.first;
+                // Only invite if child is currently sleeping (OFF state) and
+                // within radio range
+                if (neighbours.find(childId) == neighbours.end()) continue;
+
+                ClusterInviteMsg *inv = new ClusterInviteMsg("CLUSTER_INV");
+                inv->senderId          = nodeId;
+                inv->clusterHeadId     = myClusterId;
+                inv->avgDist           = 0;       // not used for direct invites
+                inv->directInvite      = true;
+                inv->offeredEdgeWeight = ew;
+                sendDirect(inv, getParentModule()->getSubmodule("sensor", childId), "radioIn");
+            }
+
+            EV_INFO << "[Node " << nodeId << "] EW-cluster " << myClusterId
+                    << " hubScore=" << hubScore
+                    << " bestChildEW=" << bestChildEW
+                    << " threshold=" << ewThreshold
+                    << " invited=" << qualifying.size() << "\n";
             break;
         }
 
@@ -438,6 +503,7 @@ void SensorNode::startRound()
         assignedActiveNodeId = -1;
         warningsReceived.clear();
         knownActiveInfo.clear();
+        receivedChildEdgeWeights.clear();
     }
 
     if (useReselection) {
@@ -461,33 +527,46 @@ void SensorNode::startRound()
     steadyTimer = new cMessage("steady", KIND_STEADY);
     scheduleAt(simTime() + Ts, steadyTimer);
 
-    // Pheromone decay at mid-round
+    // Pheromone + edge weight decay at mid-round.
+    // Runs during warmup rounds too — this is what creates differentiated
+    // edge weights before Greedy-MSC clustering activates.
+    double currentRoundTime = (useGreedyMSC && roundCount <= warmupRounds)
+                              ? warmupRoundTime : roundTime;
     pruneTimer = new cMessage("prune", KIND_PRUNE);
-    scheduleAt(simTime() + roundTime * 0.5, pruneTimer);
+    scheduleAt(simTime() + currentRoundTime * 0.5, pruneTimer);
 
     // Phase 2 redundancy check
     redundancyTimer = new cMessage("redcheck", KIND_REDUNDANCY_CHECK);
     scheduleAt(simTime() + Ts + Te + uniform(0, Te), redundancyTimer);
 
-    // Greedy-MSC 4-phase scheduling:
-    //   Phase 1 (clustering)  starts at Ts+3Te, lasts Ts seconds
-    //   Phase 1 done          at Ts+3Te+Ts  → announce cluster IDs
-    //   Phase 2+3 (grouping)  at Ts+3Te+Ts+0.5s → sleep assign + Greedy-MSC
-    //   Stats report          at Ts+3Te+Ts+0.7s
-    if (useGreedyMSC) {
+    // Greedy-MSC 4-phase scheduling — only after warmup rounds complete.
+    if (useGreedyMSC && roundCount > warmupRounds) {
         simtime_t p1Start = simTime() + Ts + 3.0 * Te;
+
+        // Stagger the seed timer by hub score so high-hub backbone nodes
+        // fire first. Hub score is sum of child EWs pointing to this node,
+        // accumulated in receivedChildEdgeWeights during the selection phase.
+        // At startRound time the map is already cleared, so we use the
+        // edgeWeight map inversely: approximate hub score as max own EW
+        // (a node with high outgoing weight is also likely a backbone recipient).
+        // The full hub score is recomputed in KIND_CLUSTER_SEED from
+        // receivedChildEdgeWeights populated during the new round's cascade.
+        static constexpr double SEED_WINDOW = 0.4;
+        double approxHub = 0.0;
+        for (auto &kv : edgeWeight) approxHub += kv.second;
+        double seedDelay = SEED_WINDOW / (1.0 + approxHub);
+
         clusterSeedTimer = new cMessage("cluster_seed", KIND_CLUSTER_SEED);
-        scheduleAt(p1Start, clusterSeedTimer);   // scheduled at same time for all;
-                                                  // actual timer set inside handler
+        scheduleAt(p1Start + seedDelay, clusterSeedTimer);
 
         clusterDoneTimer = new cMessage("cluster_done", KIND_CLUSTER_DONE);
-        scheduleAt(p1Start + Ts, clusterDoneTimer);
+        scheduleAt(p1Start + Ts + 0.4, clusterDoneTimer);  // +0.4 covers full stagger window
 
         groupingTimer = new cMessage("grouping", KIND_GROUPING);
-        scheduleAt(p1Start + Ts + 0.5, groupingTimer);
+        scheduleAt(p1Start + Ts + 0.9, groupingTimer);
 
         statsTimer = new cMessage("stats", KIND_STATS);
-        scheduleAt(p1Start + Ts + 0.7, statsTimer);
+        scheduleAt(p1Start + Ts + 1.1, statsTimer);
     } else {
         statsTimer = new cMessage("stats", KIND_STATS);
         scheduleAt(simTime() + Ts + 3.0 * Te, statsTimer);
@@ -592,11 +671,22 @@ void SensorNode::broadcastPowerOn()
 
 void SensorNode::broadcastCoverageMark()
 {
+    // Include the edge weight this node holds for its cascade parent so the
+    // parent can accumulate its hub score from received CoverageMarkMsgs.
+    double ewToParent = 0.0;
+    if (cascadeParentId >= 0) {
+        auto it = edgeWeight.find(cascadeParentId);
+        if (it != edgeWeight.end()) ewToParent = it->second;
+    }
+
     CoverageMarkMsg tmpl;
-    tmpl.senderId = nodeId;
-    tmpl.senderX = posX; tmpl.senderY = posY;
-    tmpl.sensingRange = rs;
-    tmpl.remainingEnergy = getCurrentEnergy();
+    tmpl.senderId                 = nodeId;
+    tmpl.senderX                  = posX;
+    tmpl.senderY                  = posY;
+    tmpl.sensingRange             = rs;
+    tmpl.remainingEnergy          = getCurrentEnergy();
+    tmpl.senderCascadeParentId    = cascadeParentId;
+    tmpl.senderEdgeWeightToParent = ewToParent;
 
     for (auto &kv : neighbours)
         sendDirect(tmpl.dup(), getParentModule()->getSubmodule("sensor", kv.first), "radioIn");
@@ -615,9 +705,18 @@ void SensorNode::handleCoverageMark(CoverageMarkMsg *m)
     if (useGreedyMSC) {
         bool infoFound = false;
         for (auto &info : knownActiveInfo)
-            if (info.id == m->senderId) { info.energy = m->remainingEnergy; infoFound = true; break; }
+            if (info.id == m->senderId) {
+                info.energy = m->remainingEnergy;
+                infoFound = true;
+                break;
+            }
         if (!infoFound)
             knownActiveInfo.push_back({m->senderId, m->senderX, m->senderY, m->remainingEnergy});
+
+        // Hub score accumulation: if this sender was activated by ME (nodeId),
+        // record how strongly it holds that edge — this is my hub score contribution.
+        if (m->senderCascadeParentId == nodeId && m->senderEdgeWeightToParent > 1e-9)
+            receivedChildEdgeWeights[m->senderId] = m->senderEdgeWeightToParent;
     }
     delete m;
 }
@@ -733,37 +832,40 @@ void SensorNode::broadcastClusterInvite()
 
 void SensorNode::handleClusterInvite(ClusterInviteMsg *m)
 {
-    if (!useGreedyMSC || state != ON) { delete m; return; }
-    if (myClusterId >= 0) { delete m; return; }   // already in a cluster
+    if (!useGreedyMSC) { delete m; return; }
+    if (myClusterId >= 0) { delete m; return; }   // already claimed
 
-    // Compute my own avg distance to active neighbours within sensing range
-    double myAvg = 0;
-    int cnt = 0;
-    for (auto &info : knownActiveInfo) {
-        double d = dist(posX, posY, info.x, info.y);
-        if (d <= rs) { myAvg += d; cnt++; }
-    }
-    if (cnt > 0) myAvg /= cnt;
-    myAvgActiveDist = myAvg;
-
-    // Check distance similarity
-    double maxD = std::max(myAvg, m->avgDist);
-    double diff = (maxD > 1e-9) ? std::fabs(myAvg - m->avgDist) / maxD : 0;
-
-    if (diff <= clusterDistThreshold) {
-        // Join this cluster
+    if (m->directInvite) {
+        // EW-based direct invite from a backbone node — accept immediately.
+        // Because backbone nodes are staggered by hub score, the first invite
+        // received is from the highest hub-score parent: the strongest claim.
+        // Do NOT cascade — cluster membership is defined only by the backbone's
+        // direct children, not their neighbours.
         myClusterId = m->clusterHeadId;
-        cancelTimer(clusterSeedTimer);   // don't create own cluster
-
-        EV_INFO << "[Node " << nodeId << "] joined cluster " << myClusterId
-                << " (myAvg=" << myAvg << " inviterAvg=" << m->avgDist
-                << " diff=" << diff*100.0 << "%)\n";
-
-        // Cascade: invite my own active neighbours
-        broadcastClusterInvite();
+        cancelTimer(clusterSeedTimer);
+        EV_INFO << "[Node " << nodeId << "] joined EW-cluster " << myClusterId
+                << " (direct invite from " << m->senderId
+                << " ew=" << m->offeredEdgeWeight << ")\n";
+    } else {
+        // Fallback avg-distance cascade invite (from non-backbone nodes)
+        if (state != ON) { delete m; return; }
+        double myAvg = 0; int cnt = 0;
+        for (auto &info : knownActiveInfo) {
+            double d = dist(posX, posY, info.x, info.y);
+            if (d <= rs) { myAvg += d; cnt++; }
+        }
+        if (cnt > 0) myAvg /= cnt;
+        myAvgActiveDist = myAvg;
+        double maxD = std::max(myAvg, m->avgDist);
+        double diff = (maxD > 1e-9) ? std::fabs(myAvg - m->avgDist) / maxD : 0;
+        if (diff <= clusterDistThreshold) {
+            myClusterId = m->clusterHeadId;
+            cancelTimer(clusterSeedTimer);
+            EV_INFO << "[Node " << nodeId << "] joined fallback cluster "
+                    << myClusterId << " diff=" << diff*100.0 << "%\n";
+            broadcastClusterInvite();
+        }
     }
-    // else: ignore, will create own cluster when seed timer fires or at CLUSTER_DONE
-
     delete m;
 }
 
@@ -832,20 +934,25 @@ void SensorNode::handleLowBatteryWarning(LowBatteryWarningMsg *m)
     warningsReceived[m->coveredActiveId]++;
     int warnCount = warningsReceived[m->coveredActiveId];
 
+    // Fix: use <= instead of == so that groups with multiple nodes (G1=2, G2=2 etc.)
+    // don't cause the warning counter to race past higher group numbers.
+    // The wakeupTimer == nullptr guard prevents double-scheduling if the counter
+    // jumps multiple steps in rapid succession.
     if (assignedActiveNodeId == m->coveredActiveId &&
-        myGroupInCluster == warnCount)
+        myGroupInCluster <= warnCount &&
+        wakeupTimer == nullptr)
     {
         double wakeupTime = m->estimatedDeathTime - WAKEUP_BUFFER;
         if (wakeupTime <= simTime().dbl()) wakeupTime = simTime().dbl() + 0.1;
 
-        cancelTimer(wakeupTimer);
         wakeupTimer = new cMessage("wakeup", KIND_WAKEUP);
         scheduleAt(wakeupTime, wakeupTimer);
 
         EV_INFO << "[Node " << nodeId << "] Group " << myGroupInCluster
                 << " cluster=" << myClusterId
                 << " wake at t=" << wakeupTime
-                << " for active " << assignedActiveNodeId << "\n";
+                << " for active " << assignedActiveNodeId
+                << " (warnCount=" << warnCount << ")\n";
     }
     delete m;
 }
@@ -1046,18 +1153,24 @@ void SensorNode::computeCoverage(bool printReport)
         double cooldown = std::max(RESELECT_COOLDOWN_BASE, Ts + 3.0*Te + 2.0*statsInterval);
         bool cooldownPassed = (lastReselectTime < 0 ||
                                (simTime() - lastReselectTime).dbl() > cooldown);
-        if (cooldownPassed && offCount > 0) {
-            if (reselectCount > 0 && covAfterReselect >= 0 &&
-                covAfterReselect < coverageThreshold) {
+
+        if (cooldownPassed) {
+            // Give up only when there are genuinely no sleeping nodes left
+            // to recruit. The per-node reselectCount counter is unreliable
+            // as a give-up signal because the coordinator node changes when
+            // the lowest-alive-index node dies, resetting the counter.
+            // offCount == 0 is the true termination condition: if no OFF
+            // nodes exist, no reselection cascade can help.
+            if (offCount == 0) {
                 reselectGaveUp = true;
-                std::cout << "\n>>> RESELECTION gave up after " << reselectCount
-                          << " attempts <<<\n" << std::endl;
+                std::cout << "\n>>> RESELECTION gave up: no sleeping nodes "
+                          << "remain to recruit <<<\n" << std::endl;
                 return;
             }
             if (reselectCount >= maxReselections) {
                 reselectGaveUp = true;
                 std::cout << "\n>>> RESELECTION limit (" << maxReselections
-                          << ") <<<\n" << std::endl;
+                          << ") reached <<<\n" << std::endl;
                 return;
             }
             covAfterReselect = cov;

@@ -27,10 +27,14 @@ class PowerOnMsg : public cMessage {
 // ── COVERAGE_MARK stigmergy message ──────────────────────────────────────────
 class CoverageMarkMsg : public cMessage {
   public:
-    int    senderId        = -1;
-    double senderX         = 0, senderY = 0;
-    double sensingRange    = 0;
-    double remainingEnergy = 0;
+    int    senderId               = -1;
+    double senderX                = 0, senderY = 0;
+    double sensingRange           = 0;
+    double remainingEnergy        = 0;
+    // EW-clustering: child advertises which parent activated it and how
+    // strongly, so backbone nodes can compute their hub score.
+    int    senderCascadeParentId  = -1;
+    double senderEdgeWeightToParent = 0.0;
 
     CoverageMarkMsg(const char *name = "COV_MARK") : cMessage(name, 101) {}
     virtual CoverageMarkMsg *dup() const override { return new CoverageMarkMsg(*this); }
@@ -41,9 +45,12 @@ class CoverageMarkMsg : public cMessage {
 // Cascades: a node that joins re-broadcasts with its own avgDist.
 class ClusterInviteMsg : public cMessage {
   public:
-    int    senderId      = -1;
-    int    clusterHeadId = -1;   // original seed node of this cluster
-    double avgDist       = 0;    // sender's average distance to its active neighbours
+    int    senderId         = -1;
+    int    clusterHeadId   = -1;
+    double avgDist          = 0;
+    // EW-based clustering: true = direct invite from backbone node (no cascade)
+    bool   directInvite     = false;
+    double offeredEdgeWeight = 0.0;  // weight backbone holds for this child
 
     ClusterInviteMsg(const char *name = "CLUSTER_INV") : cMessage(name, 105) {}
     virtual ClusterInviteMsg *dup() const override { return new ClusterInviteMsg(*this); }
@@ -144,7 +151,17 @@ class SensorNode : public cSimpleModule
     bool   useGreedyMSC          = false;
     double clusterDistThreshold  = 0.25;
     double greedyW               = 1.0;
+    // Warmup: short rounds to accumulate differentiated edge weights
+    // before Greedy-MSC clustering activates.
+    int    warmupRounds          = 10;
+    double warmupRoundTime       = 3.0;
+    // EW-based clustering threshold: child qualifies if its EW to this
+    // backbone node >= ewClusterThreshold * best child EW.
+    double ewClusterThreshold    = 0.5;
     std::vector<ActiveNeighbourInfo> knownActiveInfo;
+    // Hub score: map of childId → edge weight that child holds pointing to me.
+    // Populated from CoverageMarkMsg. Used to identify backbone nodes.
+    std::map<int,double> receivedChildEdgeWeights;
 
     // ── Phase 1: active node clustering ──────────────────────────────────────
     int    myClusterId       = -1;
