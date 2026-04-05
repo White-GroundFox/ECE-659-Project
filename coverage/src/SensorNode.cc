@@ -1185,18 +1185,121 @@ void SensorNode::updateDisplay()
 {
     if (!hasGUI()) return;
     const double S = 10.0;
-    char buf[256];
-    if (getCurrentEnergy() <= LOW_BATTERY_THRESH * initEnergy)
-        std::snprintf(buf, sizeof(buf), "p=%.0f,%.0f;b=10,10,oval,#000000,#000000,1", posX*S, posY*S);
-    else if (state == ON)
-        std::snprintf(buf, sizeof(buf), "p=%.0f,%.0f;b=10,10,oval,#00cc00,#006600,1;r=%.0f,#00cc00",
-                      posX*S, posY*S, rs*S);
-    else if (state == OFF)
-        std::snprintf(buf, sizeof(buf), "p=%.0f,%.0f;b=8,8,oval,#cc0000,black,1", posX*S, posY*S);
-    else
-        std::snprintf(buf, sizeof(buf), "p=%.0f,%.0f;b=8,8,oval,#aaaaaa,black,1", posX*S, posY*S);
+    char buf[512];
+
+    // ── Dead node: always black ───────────────────────────────────────────────
+    if (getCurrentEnergy() <= LOW_BATTERY_THRESH * initEnergy) {
+        std::snprintf(buf, sizeof(buf),
+            "p=%.0f,%.0f;b=10,10,oval,#000000,#000000,2",
+            posX*S, posY*S);
+        getDisplayString().parse(buf);
+        return;
+    }
+
+    // ── Cluster colour palettes ───────────────────────────────────────────────
+    // Fill colour — same bright hue for BOTH active and sleeping nodes in a
+    // cluster so every node is instantly identifiable by colour alone.
+    // Border colour — a darker shade of the same hue, used as base border.
+    // Border thickness scales with edge weight to reveal the "vein" topology.
+    static constexpr int NC = 15;
+    static const char* FILL[NC] = {
+        "#2196F3",  //  0  blue
+        "#E91E63",  //  1  pink
+        "#4CAF50",  //  2  green
+        "#FF9800",  //  3  orange
+        "#9C27B0",  //  4  purple
+        "#00BCD4",  //  5  cyan
+        "#FF5722",  //  6  deep orange
+        "#8BC34A",  //  7  lime
+        "#673AB7",  //  8  deep purple
+        "#009688",  //  9  teal
+        "#FFC107",  // 10  amber
+        "#F44336",  // 11  red
+        "#3F51B5",  // 12  indigo
+        "#795548",  // 13  brown
+        "#607D8B",  // 14  blue-grey
+    };
+    static const char* BORDER[NC] = {
+        "#0D47A1",  //  0  dark blue
+        "#880E4F",  //  1  dark pink
+        "#1B5E20",  //  2  dark green
+        "#E65100",  //  3  dark orange
+        "#4A148C",  //  4  dark purple
+        "#006064",  //  5  dark cyan
+        "#BF360C",  //  6  dark deep orange
+        "#33691E",  //  7  dark lime
+        "#311B92",  //  8  dark deep purple
+        "#004D40",  //  9  dark teal
+        "#FF6F00",  // 10  dark amber
+        "#B71C1C",  // 11  dark red
+        "#1A237E",  // 12  dark indigo
+        "#3E2723",  // 13  dark brown
+        "#263238",  // 14  dark blue-grey
+    };
+
+    // ── Border thickness from edge weight — reveals the vein topology ─────────
+    // maxEW=0 → 1px  |  0.3 → 2px  |  0.6 → 3px  |  0.9 → 4px  |  1.2+ → 5px
+    double maxEW = 0.0;
+    for (auto &kv : edgeWeight) maxEW = std::max(maxEW, kv.second);
+    int bw = 1 + std::min(4, (int)(maxEW * 3.5));  // 1–5 px
+
+    // ── Greedy-MSC mode: every node coloured by cluster ───────────────────────
+    if (useGreedyMSC && myClusterId >= 0) {
+        int ci = myClusterId % NC;
+
+        if (state == ON) {
+            // Active backbone/replacement: large solid circle + sensing ring.
+            // Border is darker cluster shade; thickness reveals edge weight.
+            std::snprintf(buf, sizeof(buf),
+                "p=%.0f,%.0f;"
+                "b=13,13,oval,%s,%s,%d;"
+                "r=%.0f,%s",
+                posX*S, posY*S,
+                FILL[ci], BORDER[ci], bw,
+                rs*S, FILL[ci]);
+        } else if (state == OFF) {
+            // Sleeping backup: same cluster fill, slightly smaller, no ring.
+            // The absence of the radius ring is the only visual difference
+            // from an active node — colour is identical so cluster membership
+            // is unambiguous.
+            std::snprintf(buf, sizeof(buf),
+                "p=%.0f,%.0f;"
+                "b=9,9,oval,%s,%s,%d",
+                posX*S, posY*S,
+                FILL[ci], BORDER[ci], bw);
+        } else {
+            // UNDECIDED (during warmup / reselection): neutral grey
+            std::snprintf(buf, sizeof(buf),
+                "p=%.0f,%.0f;b=7,7,oval,#cccccc,#666666,1",
+                posX*S, posY*S);
+        }
+
+    } else {
+        // ── Baseline / no-cluster mode: original green/red/grey scheme ────────
+        // Edge weight still shown via border thickness on active nodes.
+        if (state == ON) {
+            const char* border = (bw > 1) ? "#996600" : "#006600";
+            std::snprintf(buf, sizeof(buf),
+                "p=%.0f,%.0f;"
+                "b=10,10,oval,#00cc00,%s,%d;"
+                "r=%.0f,#00cc00",
+                posX*S, posY*S, border, bw,
+                rs*S);
+        } else if (state == OFF) {
+            std::snprintf(buf, sizeof(buf),
+                "p=%.0f,%.0f;b=8,8,oval,#cc0000,black,1",
+                posX*S, posY*S);
+        } else {
+            std::snprintf(buf, sizeof(buf),
+                "p=%.0f,%.0f;b=8,8,oval,#aaaaaa,black,1",
+                posX*S, posY*S);
+        }
+    }
+
     getDisplayString().parse(buf);
 }
+
+
 
 void SensorNode::finish()
 {
